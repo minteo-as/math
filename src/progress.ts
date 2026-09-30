@@ -12,13 +12,20 @@ interface Progress {
   stars: Record<string, number>
 }
 
+/** Behold kun gyldige poster: { "3-07": 1..3 }. Alt andet ignoreres. */
+function sanitize(stars: unknown): Record<string, number> {
+  if (typeof stars !== 'object' || stars === null || Array.isArray(stars)) return {}
+  const clean: Record<string, number> = {}
+  for (const [id, value] of Object.entries(stars)) {
+    if (Number.isInteger(value) && value >= 1 && value <= 3) clean[id] = value
+  }
+  return clean
+}
+
 function load(): Progress {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (parsed && typeof parsed.stars === 'object') return { stars: parsed.stars }
-    }
+    if (raw) return { stars: sanitize(JSON.parse(raw)?.stars) }
   } catch {
     // ignorer – start forfra
   }

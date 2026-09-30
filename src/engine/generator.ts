@@ -61,7 +61,9 @@ const GENERATORS: Record<number, LevelGen> = {
     extraBlanks: 0,
     trapCount: 2,
     trapOptions: { form: 'frac', ...noTraps },
-    // Primtals-nævnere: så er alle brøker automatisk forkortede.
+    // Alle tal skal have præcis den fælles nævner i forkortet form (se `valid`).
+    // randomProper vælger kun tællere uden fælles faktor med nævneren, og
+    // udregnede tal, der kan forkortes til en anden nævner, afvises af `valid`.
     setup: (rng) => ({ commonDen: rng.pick([5, 7, 9, 11]) }),
     randomValue: (rng, ctx) => randomProper(rng, [ctx.commonDen!], 1),
     valid: (f, ctx) => f.d === ctx.commonDen && f.n > 0 && toNumber(f) < 2,
