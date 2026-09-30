@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test og byg
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer
+        run: npm ci
+
+      - name: Typetjek
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      # Banerne er færdiglavede. Tjek at puzzles.json passer til generatoren,
+      # så en ændring i generatoren ikke glemmer at lave banerne om (eller omvendt).
+      - name: Banerne er opdaterede
+        run: |
+          npm run generate
+          git diff --exit-code -- src/data/puzzles.json || {
+            echo "::error::src/data/puzzles.json passer ikke til generatoren. Kør 'npm run generate' og commit resultatet."
+            exit 1
+          }
+
+      - name: Byg
+        run: npm run build
+
+      # upload-artifact pakker selv mappen som en zip. Downloaden indeholder
+      # index.html og assets/ direkte i roden – klar til at lægge på webserveren.
+      - name: Gem dist som zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: broekkryds-dist-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30

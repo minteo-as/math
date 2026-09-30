@@ -13,6 +13,16 @@ npm run build      # statiske filer i dist/ – kan lægges på enhver webserver
 npm run generate   # lav banerne igen (src/data/puzzles.json)
 ```
 
+## CI
+
+`.github/workflows/ci.yml` kører ved hvert push til `main` og ved hver pull request. Den:
+
+- installerer, typetjekker og kører tests,
+- tjekker, at `src/data/puzzles.json` passer til generatoren,
+- bygger og gemmer `dist/` som en zip (under *Artifacts* på workflow-kørslen, gemmes i 30 dage).
+
+Zip-filen indeholder `index.html` og `assets/` direkte i roden og kan pakkes ud på webserveren, som den er.
+
 ## Gameplay
 
 - Hver række (vandret og lodret) er en ligning `a ∘ b = c`. Eleven lægger brikker i de tomme felter.
