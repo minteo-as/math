@@ -1,4 +1,4 @@
-import { apply, equals, frac, isReduced, token, type Frac, type NumToken } from './fraction'
+import { apply, equals, frac, isReduced, token, type Form, type Frac, type NumToken } from './fraction'
 import type { LevelInfo } from './levels'
 import type { CellKey, Equation, MisconceptionKind, Puzzle, PuzzleCell } from './types'
 import { cellKey } from './types'
@@ -14,15 +14,27 @@ export function tokenKey(t: NumToken): string {
   return `${t.n}/${t.d}/${t.form}`
 }
 
+export type FormIssue = 'not-reduced' | 'improper' | 'as-percent' | 'as-decimal'
+
 /**
- * Er brikken skrevet på den form, niveauet forventer?
+ * Er brikken skrevet på den form, feltet og niveauet forventer?
+ * `expected` er feltets krævede form (kun sat på decimal- og procentniveauer).
  * Returnerer grunden, hvis ikke.
  */
-export function formIssue(t: NumToken, level: LevelInfo): 'not-reduced' | 'improper' | null {
+export function formIssue(t: NumToken, level: LevelInfo, expected?: Form): FormIssue | null {
+  if (expected === 'dec' || expected === 'pct') {
+    if (t.form === expected) return null
+    return expected === 'pct' ? 'as-percent' : 'as-decimal'
+  }
   if (!isReduced(t)) return 'not-reduced'
-  const canonical = token(t, level.mixed ? 'mixed' : 'frac')
+  const canonical = token(t, level.form === 'mixed' ? 'mixed' : 'frac')
   if (canonical.form !== t.form) return 'improper'
   return null
+}
+
+/** Den skriveform, et tomt felt kræver (undefined = niveauets almindelige regler). */
+export function expectedForm(cell: PuzzleCell | undefined): Form | undefined {
+  return cell?.kind === 'blank' ? cell.form : undefined
 }
 
 export function cellMap(puzzle: Puzzle): Map<CellKey, PuzzleCell> {
@@ -38,7 +50,7 @@ export type EquationStatus = 'incomplete' | 'ok' | 'wrong'
 export interface EquationResult {
   status: EquationStatus
   /** Brikker med rigtig værdi, men forkert skriveform (uforkortet / ikke blandet tal). */
-  formIssues: { cell: CellKey; kind: 'not-reduced' | 'improper' }[]
+  formIssues: { cell: CellKey; kind: FormIssue }[]
   /** Fælde-brikker lagt i den ligning, de hører til. */
   trapHits: { cell: CellKey; kind: MisconceptionKind }[]
 }
@@ -86,7 +98,7 @@ export function evaluateEquation(
     const cell = cells.get(key)
     const tile = board[key]
     if (cell?.kind !== 'blank' || tile === null || tile === undefined) continue
-    const issue = formIssue(puzzle.tiles[tile], level)
+    const issue = formIssue(puzzle.tiles[tile], level, expectedForm(cell))
     if (issue) result.formIssues.push({ cell: key, kind: issue })
   }
   if (ok && result.formIssues.length > 0 && level.reduce === 'required') ok = false

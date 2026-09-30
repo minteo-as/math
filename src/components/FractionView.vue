@@ -10,6 +10,7 @@ const label = computed(() => tokenText(props.value))
 <template>
   <span class="num" :aria-label="label" role="img">
     <span v-if="p.negative" class="sign">−</span>
+    <span v-if="p.text !== null" class="text" :class="{ long: p.text.length >= 5 }">{{ p.text }}</span>
     <span v-if="p.whole !== null" class="whole">{{ p.whole }}</span>
     <span v-if="p.num !== null" class="frac">
       <span class="top">{{ p.num }}</span>
@@ -31,6 +32,14 @@ const label = computed(() => tokenText(props.value))
 .whole {
   font-size: var(--num-size, 1.4em);
   font-weight: 700;
+}
+.text {
+  font-size: 1.1em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.text.long {
+  font-size: 0.85em;
 }
 .frac {
   display: inline-flex;

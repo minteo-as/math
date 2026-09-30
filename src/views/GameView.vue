@@ -6,6 +6,7 @@ import PuzzleGrid from '../components/PuzzleGrid.vue'
 import StarRow from '../components/StarRow.vue'
 import TileBank from '../components/TileBank.vue'
 import { useGame } from '../composables/useGame'
+import { topicInfo } from '../engine/levels'
 import { nextPuzzle, puzzleById } from '../puzzles'
 
 const props = defineProps<{ id: string }>()
@@ -15,10 +16,18 @@ const puzzle = puzzleById(props.id)
 const game = puzzle ? useGame(puzzle) : null
 const next = puzzle ? nextPuzzle(puzzle) : undefined
 
+const topic = game ? topicInfo(game.level.topic) : null
+
 const ruleText = computed(() => {
-  if (!game) return ''
+  if (!game || !puzzle) return ''
   const l = game.level
-  if (l.reduce === 'required') return l.mixed ? 'Svar skal være forkortede og skrevet som blandede tal.' : 'Svar skal være forkortede.'
+  if (l.form === 'dec') {
+    const hasPercent = puzzle.equations.some((e) => e.op === 'af')
+    return hasPercent ? 'Procenter skrives med %, alle andre tal som decimaltal.' : ''
+  }
+  if (l.reduce === 'required') {
+    return l.form === 'mixed' ? 'Svar skal være forkortede og skrevet som blandede tal.' : 'Svar skal være forkortede.'
+  }
   return ''
 })
 
@@ -102,15 +111,15 @@ function goNext() {
     <header class="topbar">
       <RouterLink class="icon-btn" :to="{ name: 'level', params: { level: puzzle.level } }" aria-label="Tilbage">←</RouterLink>
       <div class="title">
-        <strong>Niveau {{ puzzle.level }} · Bane {{ puzzle.index }}</strong>
-        <span>{{ game.level.title }}</span>
+        <strong>Niveau {{ game.level.number }} · Bane {{ puzzle.index }}</strong>
+        <span>{{ topic?.title }}: {{ game.level.title }}</span>
       </div>
       <button type="button" class="icon-btn" aria-label="Start forfra" title="Start forfra" @click="game.restart()">↻</button>
     </header>
 
     <p v-if="ruleText" class="rule">{{ ruleText }}</p>
 
-    <div class="board-wrap" :style="{ '--cols': puzzle.cols }">
+    <div class="board-wrap">
       <PuzzleGrid
         :puzzle="puzzle"
         :board="game.board"
@@ -212,8 +221,6 @@ function goNext() {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  /* Feltstørrelse: højst 64px, men så gitteret altid kan være på skærmen. */
-  --cell: min(64px, calc((min(100vw, var(--page-max)) - 32px) / var(--cols, 5)));
   --tile: 58px;
 }
 .topbar {
@@ -238,7 +245,6 @@ function goNext() {
   color: var(--muted);
 }
 .board-wrap {
-  --cell: min(64px, calc((min(100vw, var(--page-max)) - 32px) / var(--cols)));
   padding: 16px 0 8px;
   overflow: visible;
 }

@@ -10,9 +10,22 @@
  *  4. Tilføj fælde-brikker (typiske fejl).
  *  5. Kontrollér, at der er præcis én løsning.
  */
-import { apply, equals, frac, gcd, isInteger, reduce, token, toNumber, type Form, type Frac, type Op } from './fraction'
+import {
+  apply,
+  decimals,
+  equals,
+  frac,
+  gcd,
+  isInteger,
+  reduce,
+  token,
+  toNumber,
+  type Form,
+  type Frac,
+  type Op,
+} from './fraction'
 import { levelInfo, type LevelInfo } from './levels'
-import { trapCandidates, type TrapOptions } from './misconceptions'
+import { percentTrapCandidates, trapCandidates, type TrapOptions } from './misconceptions'
 import { createRng, type Rng } from './rng'
 import { deductionOrder, findSolutions, solveFor } from './solver'
 import { equationCells, TEMPLATES, type Template } from './templates'
@@ -23,17 +36,24 @@ interface GenContext {
   commonDen?: number
 }
 
+/** Et tal-felts rolle: almindeligt tal eller procent (første led i "p % af x"). */
+type Role = 'num' | 'pct'
+
 interface LevelGen {
   templates: string[]
   ops: Op[]
   form: Form
+  /** Skal tomme felter kræve en bestemt skriveform (decimal/procent)? */
+  cellForms?: boolean
   /** Tomme felter ud over ét pr. ligning. Kræver, at eleven bruger brikkerne til at ræsonnere. */
   extraBlanks: number
   trapCount: number
   trapOptions: TrapOptions
   setup(rng: Rng): GenContext
-  randomValue(rng: Rng, ctx: GenContext): Frac
-  valid(f: Frac, ctx: GenContext): boolean
+  randomValue(rng: Rng, ctx: GenContext, role?: Role): Frac
+  valid(f: Frac, ctx: GenContext, role?: Role): boolean
+  /** Hvor store/små fælde-brikker må være. */
+  trapValid?(f: Frac): boolean
   /** Ekstra krav til hele banen. */
   puzzleOk(eqs: { op: Op; vals: Frac[] }[]): boolean
 }
@@ -53,7 +73,16 @@ const L3_DENS = [2, 3, 4, 5, 6, 8, 9, 10, 12]
 const L4_DENS = [2, 3, 4, 5, 6, 8, 10, 12]
 const L5_DENS = [2, 3, 4, 5, 6, 8, 10, 12]
 
-const GENERATORS: Record<number, LevelGen> = {
+/** Endeligt decimaltal med højst `maxDec` decimaler og højst `maxDigits` cifre i alt. */
+function decimalOk(f: Frac, maxDec: number, maxDigits: number): boolean {
+  const k = decimals(f)
+  if (k === null || k > maxDec) return false
+  return String(Math.abs(Math.round((f.n * 10 ** k) / f.d))).length <= maxDigits
+}
+
+const PERCENTS = [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 80, 90, 120, 150]
+
+const GENERATORS: Record<string, LevelGen> = {
   1: {
     templates: ['pi', 'beam', 'hshape', 'zig', 'square'],
     ops: ['+', '-'],
@@ -140,10 +169,73 @@ const GENERATORS: Record<number, LevelGen> = {
       return negatives * 3 >= all.length && ops.size >= 3 && all.some((v) => !isInteger(v))
     },
   },
+  P1: {
+    templates: ['pi', 'beam', 'hshape', 'zig', 'square', 'stairs'],
+    ops: ['+', '-'],
+    form: 'dec',
+    cellForms: true,
+    extraBlanks: 0,
+    trapCount: 3,
+    trapOptions: { form: 'dec', ...noTraps },
+    setup: () => ({}),
+    randomValue: (rng) => {
+      const k = rng.pick([1, 1, 2])
+      return reduce(frac(rng.int(1, k === 1 ? 250 : 999), 10 ** k))
+    },
+    valid: (f) => decimalOk(f, 2, 4) && f.n > 0 && toNumber(f) < 100,
+    trapValid: (f) => f.n > 0 && decimalOk(f, 3, 5),
+    // Mindst én ligning skal have led med forskelligt antal decimaler (0,7 + 0,25).
+    puzzleOk: (eqs) =>
+      eqs.some((e) => decimals(e.vals[0]) !== decimals(e.vals[1])) &&
+      eqs.every((e) => e.vals.some((v) => !isInteger(v))),
+  },
+  P2: {
+    templates: ['pi', 'beam', 'hshape', 'zig', 'square'],
+    ops: ['*', ':'],
+    form: 'dec',
+    cellForms: true,
+    extraBlanks: 0,
+    trapCount: 3,
+    trapOptions: { form: 'dec', ...noTraps },
+    setup: () => ({}),
+    randomValue: (rng) => {
+      const r = rng.next()
+      if (r < 0.3) return frac(rng.int(2, 12))
+      if (r < 0.75) return reduce(frac(rng.int(1, 49), 10))
+      return reduce(frac(rng.int(1, 20) * 5, 100))
+    },
+    valid: (f) => decimalOk(f, 2, 4) && f.n > 0 && toNumber(f) <= 200 && !(f.n === 1 && f.d === 1),
+    trapValid: (f) => f.n > 0 && decimalOk(f, 3, 5),
+    puzzleOk: (eqs) => eqs.every((e) => e.vals.some((v) => !isInteger(v))),
+  },
+  P3: {
+    templates: ['pi', 'beam', 'hshape', 'zig', 'square'],
+    ops: ['af', 'af', '+', '-'],
+    form: 'dec',
+    cellForms: true,
+    extraBlanks: 0,
+    trapCount: 3,
+    trapOptions: { form: 'dec', ...noTraps },
+    setup: () => ({}),
+    randomValue: (rng, _ctx, role) => {
+      if (role === 'pct') return frac(rng.pick(PERCENTS), 100)
+      return rng.next() < 0.7 ? frac(rng.int(2, 40) * 10) : frac(rng.int(4, 80) * 5)
+    },
+    valid: (f, _ctx, role) => {
+      if (role === 'pct') {
+        const p = frac(f.n * 100, f.d)
+        return decimalOk(p, 1, 4) && toNumber(p) >= 1 && toNumber(p) <= 200
+      }
+      return decimalOk(f, 2, 4) && f.n > 0 && toNumber(f) <= 2000
+    },
+    trapValid: (f) => f.n > 0 && decimalOk(f, 3, 5),
+    // Mindst halvdelen af ligningerne skal være "procent af".
+    puzzleOk: (eqs) => eqs.filter((e) => e.op === 'af').length * 2 >= eqs.length,
+  },
 }
 
-export function generatorLevels(): number[] {
-  return Object.keys(GENERATORS).map(Number)
+export function generatorLevels(): string[] {
+  return Object.keys(GENERATORS)
 }
 
 interface Layout {
@@ -178,8 +270,31 @@ export function layoutOf(template: Template): Layout {
   return { rows, cols, equations, numKeys, kinds }
 }
 
+/**
+ * Hvilke felter er procenter? Det er første led i en "af"-ligning.
+ * Et procent-felt må ikke samtidig være et almindeligt tal i en anden ligning.
+ * Returnerer null, hvis regnetegnene ikke passer sammen på den måde.
+ */
+function rolesFor(layout: Layout, ops: Op[]): Map<CellKey, Role> | null {
+  const roles = new Map<CellKey, Role>(layout.numKeys.map((k) => [k, 'num']))
+  layout.equations.forEach((eq, i) => {
+    if (ops[i] === 'af') roles.set(eq.nums[0], 'pct')
+  })
+  const consistent = layout.equations.every((eq, i) =>
+    eq.nums.every((k, pos) => (roles.get(k) === 'pct') === (ops[i] === 'af' && pos === 0)),
+  )
+  return consistent ? roles : null
+}
+
 /** Trin 2: fyld alle tal-felter. Returnerer null, hvis forsøget mislykkes. */
-function fillValues(layout: Layout, ops: Op[], gen: LevelGen, ctx: GenContext, rng: Rng): Map<CellKey, Frac> | null {
+function fillValues(
+  layout: Layout,
+  ops: Op[],
+  roles: Map<CellKey, Role>,
+  gen: LevelGen,
+  ctx: GenContext,
+  rng: Rng,
+): Map<CellKey, Frac> | null {
   const values = new Map<CellKey, Frac>()
   const holds = () =>
     layout.equations.every((eq, i) => {
@@ -193,15 +308,29 @@ function fillValues(layout: Layout, ops: Op[], gen: LevelGen, ctx: GenContext, r
       const pos = eq.nums.findIndex((k) => !values.has(k)) as 0 | 1 | 2
       const known = eq.nums.map((k) => values.get(k) ?? null) as [Frac | null, Frac | null, Frac | null]
       const value = solveFor(ops[forcedIndex], pos, known)
-      if (!value || !gen.valid(value, ctx)) return null
+      if (!value || !gen.valid(value, ctx, roles.get(eq.nums[pos]))) return null
       values.set(eq.nums[pos], value)
       if (!holds()) return null
     } else {
       const free = layout.numKeys.filter((k) => !values.has(k))
-      values.set(rng.pick(free), gen.randomValue(rng, ctx))
+      const key = rng.pick(free)
+      const value = gen.randomValue(rng, ctx, roles.get(key))
+      if (!gen.valid(value, ctx, roles.get(key))) return null
+      values.set(key, value)
     }
   }
   return values
+}
+
+/** Skriveformen for et tal-felt. */
+interface Forms {
+  of(key: CellKey): Form
+  /** Skal de tomme felter have deres krævede form med i banen? */
+  onBlanks: boolean
+}
+
+function formsFor(gen: LevelGen, roles: Map<CellKey, Role>): Forms {
+  return { of: (key) => (roles.get(key) === 'pct' ? 'pct' : gen.form), onBlanks: gen.cellForms ?? false }
 }
 
 function buildPuzzle(
@@ -209,14 +338,15 @@ function buildPuzzle(
   ops: Op[],
   values: Map<CellKey, Frac>,
   blanks: Set<CellKey>,
-  form: Form,
+  forms: Forms,
 ): Puzzle {
   const cells: PuzzleCell[] = []
   for (const [key, kind] of layout.kinds) {
     const [r, c] = key.split(',').map(Number)
-    if (kind === 'num') {
-      cells.push(blanks.has(key) ? { r, c, kind: 'blank' } : { r, c, kind: 'given', value: token(values.get(key)!, form) })
-    }
+    if (kind !== 'num') continue
+    if (!blanks.has(key)) cells.push({ r, c, kind: 'given', value: token(values.get(key)!, forms.of(key)) })
+    else if (forms.onBlanks) cells.push({ r, c, kind: 'blank', form: forms.of(key) })
+    else cells.push({ r, c, kind: 'blank' })
   }
   layout.equations.forEach((eq, i) => {
     const [r1, c1] = eq.cells[1].split(',').map(Number)
@@ -228,13 +358,13 @@ function buildPuzzle(
   const blankList = [...blanks]
   return {
     id: '',
-    level: 0,
+    level: '',
     index: 0,
     rows: layout.rows,
     cols: layout.cols,
     cells,
     equations,
-    tiles: blankList.map((k) => token(values.get(k)!, form)),
+    tiles: blankList.map((k) => token(values.get(k)!, forms.of(k))),
     solutions: [Object.fromEntries(blankList.map((k, i) => [k, i]))],
     traps: [],
   }
@@ -251,6 +381,7 @@ function chooseBlanks(
   values: Map<CellKey, Frac>,
   ops: Op[],
   gen: LevelGen,
+  forms: Forms,
   level: LevelInfo,
   rng: Rng,
 ) {
@@ -260,7 +391,7 @@ function chooseBlanks(
   for (const key of order) {
     if (blanks.size >= target) break
     blanks.add(key)
-    if (!deductionOrder(buildPuzzle(layout, ops, values, blanks, gen.form))) blanks.delete(key)
+    if (!deductionOrder(buildPuzzle(layout, ops, values, blanks, forms))) blanks.delete(key)
   }
   if (blanks.size < target) return null
   // Mindst ét resultat skal være tomt, ellers er der ingen steder at lægge fælder.
@@ -270,16 +401,17 @@ function chooseBlanks(
     if (extra >= gen.extraBlanks) break
     if (blanks.has(key)) continue
     blanks.add(key)
-    if (findSolutions(buildPuzzle(layout, ops, values, blanks, gen.form), level, 2).length === 1) extra++
+    if (findSolutions(buildPuzzle(layout, ops, values, blanks, forms), level, 2).length === 1) extra++
     else blanks.delete(key)
   }
   if (extra < gen.extraBlanks) return null
   return blanks
 }
 
-function trapValid(f: Frac, level: number): boolean {
+/** Standardgrænser for brøk-fælder: ikke for store tal, og kun negative hvis niveauet har negative tal. */
+function fracTrapValid(f: Frac, negatives: boolean): boolean {
   if (f.n === 0 || f.d > 36 || Math.abs(f.n) > 72) return false
-  if (level <= 4 && f.n < 0) return false
+  if (!negatives && f.n < 0) return false
   return Math.abs(toNumber(f)) <= 15
 }
 
@@ -289,7 +421,7 @@ function trapValid(f: Frac, level: number): boolean {
  */
 function isolate(op: Op, pos: 0 | 1 | 2, [a, b, c]: Frac[]): { op: Op; p: Frac; q: Frac } {
   if (pos === 2) return { op, p: a, q: b }
-  const inverse: Record<Op, Op> = { '+': '-', '-': '+', '*': ':', ':': '*' }
+  const inverse: Record<Op, Op> = { '+': '-', '-': '+', '*': ':', ':': '*', af: ':' }
   if (pos === 0) return { op: inverse[op], p: c, q: b }
   // b ukendt: a + b = c -> c − a,  a − b = c -> a − c,  a · b = c -> c : a,  a : b = c -> a : c
   if (op === '+' || op === '*') return { op: inverse[op], p: c, q: a }
@@ -297,7 +429,15 @@ function isolate(op: Op, pos: 0 | 1 | 2, [a, b, c]: Frac[]): { op: Op; p: Frac; 
 }
 
 /** Trin 4 og 5: fælder – og kontrol af, at løsningen stadig er entydig. */
-function addTraps(puzzle: Puzzle, gen: LevelGen, level: LevelInfo, values: Map<CellKey, Frac>, rng: Rng, ctx: GenContext) {
+function addTraps(
+  puzzle: Puzzle,
+  gen: LevelGen,
+  level: LevelInfo,
+  values: Map<CellKey, Frac>,
+  forms: Forms,
+  rng: Rng,
+  ctx: GenContext,
+) {
   const blankValues = Object.keys(puzzle.solutions[0]).map((k) => values.get(k)!)
   type Candidate = { value: ReturnType<typeof token>; kind: Trap['kind']; cell: CellKey; equation: number }
   const candidates: Candidate[] = []
@@ -305,9 +445,17 @@ function addTraps(puzzle: Puzzle, gen: LevelGen, level: LevelInfo, values: Map<C
     const vals = eq.nums.map((k) => values.get(k)!)
     eq.nums.forEach((key, pos) => {
       if (!(key in puzzle.solutions[0])) return
-      const { op, p, q } = isolate(eq.op, pos as 0 | 1 | 2, vals)
-      for (const cand of trapCandidates(op, p, q, vals[pos], gen.trapOptions)) {
-        candidates.push({ ...cand, cell: key, equation: i })
+      const unknown = pos as 0 | 1 | 2
+      let found
+      if (eq.op === 'af') found = percentTrapCandidates(unknown, vals[0], vals[1], vals[2])
+      else {
+        const { op, p, q } = isolate(eq.op, unknown, vals)
+        found = trapCandidates(op, p, q, vals[pos], gen.trapOptions)
+      }
+      for (const cand of found) candidates.push({ ...cand, cell: key, equation: i })
+      // Procent-felt: den rigtige værdi skrevet som decimaltal (0,25 i stedet for 25 %).
+      if (forms.of(key) === 'pct') {
+        candidates.push({ value: token(vals[pos], 'dec'), kind: 'as-percent', cell: key, equation: i })
       }
     })
   })
@@ -315,7 +463,7 @@ function addTraps(puzzle: Puzzle, gen: LevelGen, level: LevelInfo, values: Map<C
 
   const accept = (value: ReturnType<typeof token>): boolean => {
     const f = frac(value.n, value.d)
-    if (!trapValid(f, level.level)) return false
+    if (!(gen.trapValid ? gen.trapValid(f) : fracTrapValid(f, gen.trapOptions.negatives))) return false
     if (puzzle.tiles.some((t) => tokenKey(t) === tokenKey(value))) return false
     const trial = { ...puzzle, tiles: [...puzzle.tiles, value] }
     return findSolutions(trial, level, 2).length === 1
@@ -348,7 +496,7 @@ function addTraps(puzzle: Puzzle, gen: LevelGen, level: LevelInfo, values: Map<C
   // Er der ikke fejl-fælder nok, fyldes op med tilfældige, pæne tal.
   let attempts = 0
   while (puzzle.tiles.length < blankValues.length + gen.trapCount && attempts++ < 200) {
-    const f = gen.randomValue(rng, ctx)
+    const f = gen.randomValue(rng, ctx, 'num')
     if (blankValues.some((bv) => equals(bv, f))) continue
     const value = token(f, gen.form)
     if (accept(value)) puzzle.tiles.push(value)
@@ -356,7 +504,7 @@ function addTraps(puzzle: Puzzle, gen: LevelGen, level: LevelInfo, values: Map<C
 }
 
 function isFormTrap(kind: string): boolean {
-  return kind === 'not-reduced' || kind === 'improper'
+  return kind === 'not-reduced' || kind === 'improper' || kind === 'as-percent' || kind === 'as-decimal'
 }
 
 /** Bland brikkerne og opdater alle indeks, der peger på dem. */
@@ -371,30 +519,33 @@ function shuffleTiles(puzzle: Puzzle, rng: Rng) {
 }
 
 /** Laver én bane. Prøver igen og igen, indtil alle krav er opfyldt. */
-export function generatePuzzle(levelNo: number, seed: number, templateName?: string): Puzzle {
-  const gen = GENERATORS[levelNo]
-  if (!gen) throw new Error(`Ingen generator til niveau ${levelNo}`)
-  const level = levelInfo(levelNo)
+export function generatePuzzle(code: string, seed: number, templateName?: string): Puzzle {
+  const gen = GENERATORS[code]
+  if (!gen) throw new Error(`Ingen generator til niveau ${code}`)
+  const level = levelInfo(code)
   const rng = createRng(seed)
   for (let attempt = 0; attempt < 20000; attempt++) {
     const template = TEMPLATES[templateName ?? rng.pick(gen.templates)]
     const layout = layoutOf(template)
     const ops = layout.equations.map(() => rng.pick(gen.ops))
+    const roles = rolesFor(layout, ops)
+    if (!roles) continue
+    const forms = formsFor(gen, roles)
     const ctx = gen.setup(rng)
-    const values = fillValues(layout, ops, gen, ctx, rng)
+    const values = fillValues(layout, ops, roles, gen, ctx, rng)
     if (!values) continue
     const eqVals = layout.equations.map((eq, i) => ({ op: ops[i], vals: eq.nums.map((k) => values.get(k)!) }))
     if (!gen.puzzleOk(eqVals)) continue
-    const blanks = chooseBlanks(layout, values, ops, gen, level, rng)
+    const blanks = chooseBlanks(layout, values, ops, gen, forms, level, rng)
     if (!blanks) continue
-    const puzzle = buildPuzzle(layout, ops, values, blanks, gen.form)
+    const puzzle = buildPuzzle(layout, ops, values, blanks, forms)
     if (findSolutions(puzzle, level, 2).length !== 1) continue
-    addTraps(puzzle, gen, level, values, rng, ctx)
+    addTraps(puzzle, gen, level, values, forms, rng, ctx)
     shuffleTiles(puzzle, rng)
-    puzzle.level = levelNo
+    puzzle.level = code
     return puzzle
   }
-  throw new Error(`Kunne ikke lave en bane til niveau ${levelNo} (seed ${seed})`)
+  throw new Error(`Kunne ikke lave en bane til niveau ${code} (seed ${seed})`)
 }
 
 /** En "fingeraftryk" af banen, så vi undgår dubletter. */
@@ -404,20 +555,20 @@ export function puzzleSignature(p: Puzzle): string {
     .join('') + '|' + p.cells.map((c) => (c.kind === 'given' ? tokenKey(c.value) : c.kind)).join(',')
 }
 
-export function generateLevel(levelNo: number, count: number, baseSeed: number): Puzzle[] {
-  const gen = GENERATORS[levelNo]
+export function generateLevel(code: string, count: number, baseSeed: number): Puzzle[] {
+  const gen = GENERATORS[code]
   const puzzles: Puzzle[] = []
   const seen = new Set<string>()
   let seed = baseSeed
   while (puzzles.length < count) {
     // Skabelonerne skiftes på skift, så banerne ser forskellige ud.
     const template = gen.templates[puzzles.length % gen.templates.length]
-    const p = generatePuzzle(levelNo, seed++, template)
+    const p = generatePuzzle(code, seed++, template)
     const sig = puzzleSignature(p)
     if (seen.has(sig)) continue
     seen.add(sig)
     p.index = puzzles.length + 1
-    p.id = `${levelNo}-${String(p.index).padStart(2, '0')}`
+    p.id = `${code}-${String(p.index).padStart(2, '0')}`
     puzzles.push(p)
   }
   return puzzles

@@ -1,10 +1,10 @@
 /**
- * Niveauerne og deres regler – samlet ét sted, så gameplay kan justeres her.
+ * Emner, niveauer og deres regler – samlet ét sted, så gameplay kan justeres her.
  */
 
 /**
- * Hvad sker der, hvis eleven lægger en uforkortet (eller ikke-blandet) brik
- * med den rigtige værdi?
+ * Hvad sker der, hvis eleven lægger en brik med den rigtige værdi,
+ * men på en forkert skriveform (uforkortet, ikke blandet tal, decimal i stedet for procent)?
  *  - 'nudge':    ligningen tæller som rigtig, men spillet påpeger det
  *  - 'required': ligningen tæller som forkert
  */
@@ -18,93 +18,161 @@ export type ReduceRule = 'nudge' | 'required'
  */
 export type FeedbackMode = 'explain' | 'equations' | 'count'
 
+export type TopicId = 'broek' | 'procent' | 'algebra'
+
+export interface Topic {
+  id: TopicId
+  title: string
+  description: string
+  available: boolean
+}
+
+export const TOPICS: Topic[] = [
+  { id: 'broek', title: 'Brøker', description: 'De fire regnearter med brøker.', available: true },
+  {
+    id: 'procent',
+    title: 'Decimaltal og procent',
+    description: 'Regn med decimaltal, og find procent af et tal.',
+    available: true,
+  },
+  { id: 'algebra', title: 'Algebra', description: 'Reduktion af udtryk.', available: false },
+]
+
 export interface LevelInfo {
-  level: number
+  /** Bruges i bane-id'er og adresser, fx "3" (bane "3-07") eller "P2" (bane "P2-07"). */
+  code: string
+  topic: TopicId
+  /** Nummeret inden for emnet, som eleven ser det. */
+  number: number
   title: string
   description: string
   example: string
   available: boolean
   reduce: ReduceRule
-  /** Skal tal over 1 skrives som blandede tal? */
-  mixed: boolean
+  /** Hvordan tallene skrives: brøk, blandet tal eller decimaltal. */
+  form: 'frac' | 'mixed' | 'dec'
   feedback: FeedbackMode
+  /** Kan alle baner løses skridt for skridt (én ligning med ét ukendt tal ad gangen)? */
+  stepwise: boolean
 }
 
 export const LEVELS: LevelInfo[] = [
   {
-    level: 1,
+    code: '1',
+    topic: 'broek',
+    number: 1,
     title: 'Samme nævner',
     description: 'Plus og minus med brøker, der har samme nævner.',
     example: '2/7 + 3/7',
     available: true,
     reduce: 'nudge',
-    mixed: false,
+    form: 'frac',
     feedback: 'explain',
+    stepwise: true,
   },
   {
-    level: 2,
+    code: '2',
+    topic: 'broek',
+    number: 2,
     title: 'Forskellige nævnere',
     description: 'Plus og minus – find fællesnævneren.',
     example: '1/2 + 1/3',
     available: true,
     reduce: 'nudge',
-    mixed: false,
+    form: 'frac',
     feedback: 'explain',
+    stepwise: true,
   },
   {
-    level: 3,
+    code: '3',
+    topic: 'broek',
+    number: 3,
     title: 'Gange og dividere',
     description: 'Gange og division med brøker og hele tal.',
     example: '3 · 2/5',
     available: true,
     reduce: 'nudge',
-    mixed: false,
+    form: 'frac',
     feedback: 'equations',
+    stepwise: true,
   },
   {
-    level: 4,
+    code: '4',
+    topic: 'broek',
+    number: 4,
     title: 'Blandede tal',
     description: 'Plus og minus med blandede tal. Svarene skal være forkortede.',
     example: '3 1/4 − 1 3/4',
     available: true,
     reduce: 'required',
-    mixed: true,
+    form: 'mixed',
     feedback: 'equations',
+    stepwise: true,
   },
   {
-    level: 5,
+    code: '5',
+    topic: 'broek',
+    number: 5,
     title: 'Negative brøker',
     description: 'Alle fire regnearter – hold styr på fortegnet.',
     example: '−3/4 · 2/3',
     available: true,
     reduce: 'required',
-    mixed: false,
+    form: 'frac',
     feedback: 'equations',
+    stepwise: false,
   },
   {
-    level: 6,
-    title: 'Brøk, decimal og procent',
-    description: 'Det samme tal skrevet på forskellige måder.',
-    example: '1/4 + 0,5',
-    available: false,
+    code: 'P1',
+    topic: 'procent',
+    number: 1,
+    title: 'Decimaltal: plus og minus',
+    description: 'Husk at stille op med komma under komma.',
+    example: '0,7 + 0,25',
+    available: true,
     reduce: 'required',
-    mixed: false,
-    feedback: 'count',
+    form: 'dec',
+    feedback: 'explain',
+    stepwise: true,
   },
   {
-    level: 7,
-    title: 'Regnehierarki',
-    description: 'Længere regnestykker og potenser. Der kan være flere løsninger.',
-    example: '1/2 + 1/3 · 3/4',
-    available: false,
+    code: 'P2',
+    topic: 'procent',
+    number: 2,
+    title: 'Decimaltal: gange og dividere',
+    description: 'Hvor skal kommaet stå?',
+    example: '0,5 · 0,4',
+    available: true,
     reduce: 'required',
-    mixed: false,
-    feedback: 'count',
+    form: 'dec',
+    feedback: 'explain',
+    stepwise: true,
+  },
+  {
+    code: 'P3',
+    topic: 'procent',
+    number: 3,
+    title: 'Procent af et tal',
+    description: 'Find delen, procenten eller det hele.',
+    example: '25 % af 80',
+    available: true,
+    reduce: 'required',
+    form: 'dec',
+    feedback: 'equations',
+    stepwise: true,
   },
 ]
 
-export function levelInfo(level: number): LevelInfo {
-  const info = LEVELS.find((l) => l.level === level)
-  if (!info) throw new Error(`Ukendt niveau: ${level}`)
+export function levelInfo(code: string): LevelInfo {
+  const info = LEVELS.find((l) => l.code === code)
+  if (!info) throw new Error(`Ukendt niveau: ${code}`)
   return info
+}
+
+export function levelsForTopic(topic: TopicId): LevelInfo[] {
+  return LEVELS.filter((l) => l.topic === topic)
+}
+
+export function topicInfo(id: TopicId): Topic {
+  return TOPICS.find((t) => t.id === id)!
 }

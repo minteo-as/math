@@ -8,7 +8,7 @@ export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     { path: '/', name: 'home', component: HomeView },
-    { path: '/niveau/:level', name: 'level', component: LevelView, props: (r) => ({ level: Number(r.params.level) }) },
+    { path: '/niveau/:level', name: 'level', component: LevelView, props: (r) => ({ level: String(r.params.level) }) },
     { path: '/bane/:id', name: 'game', component: GameView, props: true },
   ],
   scrollBehavior: () => ({ top: 0 }),

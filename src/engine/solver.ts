@@ -1,5 +1,5 @@
 import { apply, div, equals, mul, sub, add, type Frac, type Op } from './fraction'
-import { blankKeys, cellMap, formIssue, tokenKey, tokenValue } from './evaluate'
+import { blankKeys, cellMap, expectedForm, formIssue, tokenKey, tokenValue } from './evaluate'
 import type { LevelInfo } from './levels'
 import type { CellKey, Puzzle } from './types'
 
@@ -19,6 +19,7 @@ export function solveFor(op: Op, pos: 0 | 1 | 2, known: [Frac | null, Frac | nul
         case '-':
           return add(c!, b!)
         case '*':
+        case 'af':
           return div(c!, b!)
         case ':':
           return mul(c!, b!)
@@ -30,6 +31,7 @@ export function solveFor(op: Op, pos: 0 | 1 | 2, known: [Frac | null, Frac | nul
       case '-':
         return sub(a!, c!)
       case '*':
+      case 'af':
         return div(c!, a!)
       case ':':
         return div(a!, c!)
@@ -51,9 +53,9 @@ export function findSolutions(puzzle: Puzzle, level: LevelInfo, limit = 2): Reco
   for (const cell of cells.values()) {
     if (cell.kind === 'given') values.set(`${cell.r},${cell.c}`, tokenValue(cell.value))
   }
-  const usable = puzzle.tiles
-    .map((t, i) => ({ i, key: tokenKey(t), value: tokenValue(t) }))
-    .filter(({ i }) => formIssue(puzzle.tiles[i], level) === null)
+  const usable = puzzle.tiles.map((t, i) => ({ i, key: tokenKey(t), value: tokenValue(t) }))
+  /** Må brikken ligge i feltet? (Kun brikker på den rigtige skriveform tæller som løsning.) */
+  const fits = (tile: number, key: CellKey) => formIssue(puzzle.tiles[tile], level, expectedForm(cells.get(key))) === null
   const used = new Set<number>()
   const assignment: Record<CellKey, number> = {}
   const solutions: Record<CellKey, number>[] = []
@@ -93,7 +95,7 @@ export function findSolutions(puzzle: Puzzle, level: LevelInfo, limit = 2): Reco
     if (next.impossible) return
     const tried = new Set<string>()
     for (const t of usable) {
-      if (used.has(t.i) || tried.has(t.key)) continue
+      if (used.has(t.i) || tried.has(t.key) || !fits(t.i, next.key)) continue
       if (next.forced && !equals(next.forced, t.value)) continue
       tried.add(t.key)
       used.add(t.i)

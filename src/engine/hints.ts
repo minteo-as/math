@@ -1,4 +1,18 @@
-import { equals, frac, fracText, isInteger, lcm, OP_SYMBOL, type Frac, type Op } from './fraction'
+import {
+  decimals,
+  decimalText,
+  equals,
+  frac,
+  fracText,
+  isInteger,
+  lcm,
+  mul,
+  OP_SYMBOL,
+  token,
+  tokenText,
+  type Frac,
+  type Op,
+} from './fraction'
 import { cellMap, tokenValue, type Board } from './evaluate'
 import type { LevelInfo } from './levels'
 import { deductionOrder } from './solver'
@@ -82,20 +96,24 @@ export function explainSteps(puzzle: Puzzle, target: HintTarget, level: LevelInf
     return lines
   }
 
+  if (eq.op === 'af') return percentSteps(pos, a, b, c)
+
   // Omskriv, så det ukendte tal står alene.
   let op: Op = eq.op
   let p = a
   let q = b
   if (pos !== 2) {
-    const inverse: Record<Op, Op> = { '+': '-', '-': '+', '*': ':', ':': '*' }
+    const inverse: Record<Op, Op> = { '+': '-', '-': '+', '*': ':', ':': '*', af: ':' }
     if (pos === 0) [op, p, q] = [inverse[eq.op], c, b]
     else if (eq.op === '+' || eq.op === '*') [op, p, q] = [inverse[eq.op], c, a]
     else [op, p, q] = [eq.op, a, c]
-    const form = level.mixed ? 'mixed' : 'frac'
-    lines.push(`Omskriv, så ? står alene:  ? = ${paren(p, form)} ${OP_SYMBOL[op]} ${paren(q, form)}`)
+    const show = (f: Frac) => (level.form === 'dec' ? decimalText(f) : paren(f, level.form))
+    lines.push(`Omskriv, så ? står alene:  ? = ${show(p)} ${OP_SYMBOL[op]} ${show(q)}`)
   }
 
-  if (level.mixed) {
+  if (level.form === 'dec') return [...lines, ...decimalSteps(op, p, q)]
+
+  if (level.form === 'mixed') {
     const mixedOnes = [p, q].filter((f) => Math.abs(f.n) > f.d && !isInteger(f))
     if (mixedOnes.length > 0) {
       lines.push(
@@ -140,8 +158,61 @@ export function explainSteps(puzzle: Puzzle, target: HintTarget, level: LevelInf
     }
   }
 
-  lines.push(level.mixed ? 'Forkort til sidst – og skriv som blandet tal, hvis tallet er større end 1.' : 'Forkort til sidst, hvis du kan.')
+  lines.push(level.form === 'mixed' ? 'Forkort til sidst – og skriv som blandet tal, hvis tallet er større end 1.' : 'Forkort til sidst, hvis du kan.')
   return lines
+}
+
+/** Decimaltal med præcis `k` decimaler, fx (0,7; 2) -> "0,70". */
+function padded(f: Frac, k: number): string {
+  const text = decimalText(f)
+  const have = decimals(f) ?? 0
+  if (k === have) return text
+  return (have === 0 ? text + ',' : text) + '0'.repeat(k - have)
+}
+
+/** Tallet uden komma, fx 0,25 -> 25. */
+function digits(f: Frac): number {
+  return Math.round(Math.abs((f.n * 10 ** (decimals(f) ?? 0)) / f.d))
+}
+
+function decimalSteps(op: Op, p: Frac, q: Frac): string[] {
+  const kp = decimals(p) ?? 0
+  const kq = decimals(q) ?? 0
+  switch (op) {
+    case '+':
+    case '-': {
+      const k = Math.max(kp, kq)
+      return [
+        `Stil op med komma under komma:  ${padded(p, k)} ${OP_SYMBOL[op]} ${padded(q, k)}`,
+        'Regn ciffer for ciffer, og sæt kommaet lige under de andre kommaer.',
+      ]
+    }
+    case '*':
+      return [
+        `Regn uden komma:  ${digits(p)} · ${digits(q)}`,
+        `Tæl decimalerne: ${kp} + ${kq} = ${kp + kq}. Så mange decimaler skal svaret have (nuller til sidst kan fjernes bagefter).`,
+      ]
+    case ':':
+      if (kq === 0) return [`Divider som med hele tal:  ${decimalText(p)} : ${decimalText(q)}. Kommaet i svaret står over kommaet i ${decimalText(p)}.`]
+      return [
+        `Gang begge tal med ${10 ** kq}, så du dividerer med et helt tal:  ${decimalText(mul(p, frac(10 ** kq)))} : ${decimalText(mul(q, frac(10 ** kq)))}`,
+      ]
+    default:
+      return []
+  }
+}
+
+/** Hint for "p % af det hele = delen". */
+function percentSteps(unknown: 0 | 1 | 2, p: Frac, whole: Frac, part: Frac): string[] {
+  const pct = tokenText(token(p, 'pct'))
+  if (unknown === 2) return [`${pct} = ${decimalText(p)}`, `Delen = ${decimalText(p)} · ${decimalText(whole)}`]
+  if (unknown === 1) {
+    return [`${pct} = ${decimalText(p)}`, `Det hele = delen : ${decimalText(p)}  →  ${decimalText(part)} : ${decimalText(p)}`]
+  }
+  return [
+    `Procenten = delen : det hele  →  ${decimalText(part)} : ${decimalText(whole)}`,
+    'Gang til sidst med 100 for at få procent.',
+  ]
 }
 
 /**
