@@ -14,7 +14,7 @@ function levelStars(level: string) {
 <template>
   <div class="page">
     <header class="hero">
-      <h1>Brøkkryds</h1>
+      <h1>Matkryds</h1>
       <p>Læg brikkerne, så alle regnestykker går op – både vandret og lodret.</p>
     </header>
 

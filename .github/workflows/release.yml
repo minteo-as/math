@@ -7,7 +7,7 @@ name: Release
 #   1. tjekker, at versionen følger lige efter seneste release (0.1.0 -> 0.1.1, 0.2.0 eller 1.0.0),
 #      og at tagget peger på en commit på main,
 #   2. kører de samme tjek som CI og bygger med tagget som version,
-#   3. lægger broekkryds-vX.Y.Z.zip på releasen,
+#   3. lægger matkryds-vX.Y.Z.zip på releasen,
 #   4. committer den nye version i package.json til main.
 #
 # Fejler noget før trin 3, sættes releasen tilbage til kladde (draft), så der aldrig
@@ -85,18 +85,20 @@ jobs:
           }
 
       - name: Byg
-        run: npm run build
+        run: |
+          npm run build
+          test -f dist/.htaccess || { echo "::error::dist/.htaccess mangler (cache-regler til webserveren)."; exit 1; }
         env:
           RELEASE_VERSION: ${{ github.event.release.tag_name }}
 
       - name: Pak dist som zip
         run: |
           cd dist
-          zip -r "../broekkryds-$TAG.zip" .
+          zip -r "../matkryds-$TAG.zip" .
 
       - name: Læg zip-filen på releasen
         id: upload
-        run: gh release upload "$TAG" "broekkryds-$TAG.zip" --clobber
+        run: gh release upload "$TAG" "matkryds-$TAG.zip" --clobber
 
       - name: Sæt releasen tilbage til kladde
         if: failure() && steps.upload.outcome != 'success'
