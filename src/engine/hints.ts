@@ -1,7 +1,6 @@
 import {
   decimals,
   decimalText,
-  equals,
   frac,
   fracText,
   isInteger,
@@ -13,7 +12,9 @@ import {
   type Frac,
   type Op,
 } from './fraction'
-import { cellMap, tokenValue, type Board } from './evaluate'
+import { cellMap, type Board } from './evaluate'
+import { constOf, pequals, tokenPoly, type Poly } from './value'
+import { algebraSteps, chooseX, substitutionLines } from './algebra'
 import type { LevelInfo } from './levels'
 import { deductionOrder } from './solver'
 import type { CellKey, Puzzle } from './types'
@@ -26,12 +27,12 @@ export interface HintTarget {
 }
 
 /** De rigtige værdier i alle tal-felter (givne + løsningen). */
-export function solutionValues(puzzle: Puzzle): Map<CellKey, Frac> {
-  const values = new Map<CellKey, Frac>()
+export function solutionValues(puzzle: Puzzle): Map<CellKey, Poly> {
+  const values = new Map<CellKey, Poly>()
   for (const cell of puzzle.cells) {
-    if (cell.kind === 'given') values.set(`${cell.r},${cell.c}`, tokenValue(cell.value))
+    if (cell.kind === 'given') values.set(`${cell.r},${cell.c}`, tokenPoly(cell.value))
   }
-  for (const [key, tile] of Object.entries(puzzle.solutions[0])) values.set(key, tokenValue(puzzle.tiles[tile]))
+  for (const [key, tile] of Object.entries(puzzle.solutions[0])) values.set(key, tokenPoly(puzzle.tiles[tile]))
   return values
 }
 
@@ -43,13 +44,13 @@ export function solutionValues(puzzle: Puzzle): Map<CellKey, Frac> {
 export function findHintTarget(puzzle: Puzzle, board: Board): HintTarget | null {
   const truth = solutionValues(puzzle)
   const cells = cellMap(puzzle)
-  const known = new Map<CellKey, Frac>()
+  const known = new Map<CellKey, Poly>()
   for (const [key, value] of truth) {
     const cell = cells.get(key)!
     if (cell.kind === 'given') known.set(key, value)
     else {
       const tile = board[key]
-      if (tile !== null && tile !== undefined && equals(tokenValue(puzzle.tiles[tile]), value)) known.set(key, value)
+      if (tile !== null && tile !== undefined && pequals(tokenPoly(puzzle.tiles[tile]), value)) known.set(key, value)
     }
   }
   const steps = deductionOrder(puzzle, known, true)
@@ -87,13 +88,23 @@ export function explainSteps(puzzle: Puzzle, target: HintTarget, level: LevelInf
   const eq = puzzle.equations[target.equation]
   const truth = solutionValues(puzzle)
   const pos = eq.nums.indexOf(target.cell) as 0 | 1 | 2
-  const [a, b, c] = eq.nums.map((k) => truth.get(k)!)
+  const polys = eq.nums.map((k) => truth.get(k)!) as [Poly, Poly, Poly]
+  const [a, b, c] = polys.map(constOf)
   const lines: string[] = []
 
   if (!target.single) {
     lines.push('Der mangler mere end ét tal i denne ligning.')
     lines.push('Kig på brikkerne: hvilke brikker kan få ligningen til at gå op?')
     return lines
+  }
+
+  if (level.form === 'expr') {
+    const inverse: Record<Op, Op> = { '+': '-', '-': '+', '*': ':', ':': '*', af: ':' }
+    const [pa, pb, pc] = polys
+    if (pos === 2) return algebraSteps(eq.op, eq.op, pa, pb, pos)
+    if (pos === 0) return algebraSteps(eq.op, inverse[eq.op], pc, pb, pos)
+    if (eq.op === '+' || eq.op === '*') return algebraSteps(eq.op, inverse[eq.op], pc, pa, pos)
+    return algebraSteps(eq.op, eq.op, pa, pc, pos)
   }
 
   if (eq.op === 'af') return percentSteps(pos, a, b, c)
@@ -107,7 +118,7 @@ export function explainSteps(puzzle: Puzzle, target: HintTarget, level: LevelInf
     if (pos === 0) [op, p, q] = [inverse[eq.op], c, b]
     else if (eq.op === '+' || eq.op === '*') [op, p, q] = [inverse[eq.op], c, a]
     else [op, p, q] = [eq.op, a, c]
-    const show = (f: Frac) => (level.form === 'dec' ? decimalText(f) : paren(f, level.form))
+    const show = (f: Frac) => (level.form === 'dec' ? decimalText(f) : paren(f, level.form === 'mixed' ? 'mixed' : 'frac'))
     lines.push(`Omskriv, så ? står alene:  ? = ${show(p)} ${OP_SYMBOL[op]} ${show(q)}`)
   }
 
@@ -160,6 +171,19 @@ export function explainSteps(puzzle: Puzzle, target: HintTarget, level: LevelInf
 
   lines.push(level.form === 'mixed' ? 'Forkort til sidst – og skriv som blandet tal, hvis tallet er større end 1.' : 'Forkort til sidst, hvis du kan.')
   return lines
+}
+
+/**
+ * Hint 4 (kun algebra): "Indsæt et tal". Viser, hvad de kendte udtryk giver for et bestemt x,
+ * og hvad det manglende udtryk derfor skal give. x vælges, så kun den rigtige brik passer.
+ */
+export function substitutionHint(puzzle: Puzzle, target: HintTarget): string[] {
+  const eq = puzzle.equations[target.equation]
+  const truth = solutionValues(puzzle)
+  const pos = eq.nums.indexOf(target.cell) as 0 | 1 | 2
+  const vals = eq.nums.map((k) => truth.get(k)!) as [Poly, Poly, Poly]
+  const x = chooseX(vals[pos], puzzle.tiles.map(tokenPoly))
+  return substitutionLines(eq.op, vals, pos, x)
 }
 
 /** Decimaltal med præcis `k` decimaler, fx (0,7; 2) -> "0,70". */

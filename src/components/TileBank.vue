@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { NumToken } from '../engine/fraction'
+import type { Token } from '../engine/value'
 import FractionView from './FractionView.vue'
 
 defineProps<{
-  tiles: NumToken[]
+  tiles: Token[]
   bank: number[]
   selected: number | null
   dragging: number | null
@@ -31,7 +31,7 @@ const emit = defineEmits<{
       @click="emit('tapTile', i)"
       @pointerdown="emit('dragStart', $event, i)"
     >
-      <FractionView :value="tiles[i]" />
+      <FractionView :value="tiles[i]" :fit="false" />
     </button>
   </div>
 </template>
@@ -54,12 +54,12 @@ const emit = defineEmits<{
   font-size: 15px;
 }
 .tile {
-  width: var(--tile);
+  min-width: var(--tile);
+  padding: 0 6px;
   height: var(--tile);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
   font: inherit;
   color: var(--tile-ink);
   background: var(--tile-bg);

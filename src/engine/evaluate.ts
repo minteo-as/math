@@ -1,4 +1,5 @@
-import { apply, equals, frac, isReduced, token, type Form, type Frac, type NumToken } from './fraction'
+import { frac, isReduced, token, type Form, type Frac, type NumToken } from './fraction'
+import { isExpr, papply, pequals, tokenPoly, type Token } from './value'
 import type { LevelInfo } from './levels'
 import type { CellKey, Equation, MisconceptionKind, Puzzle, PuzzleCell } from './types'
 import { cellKey } from './types'
@@ -10,8 +11,8 @@ export function tokenValue(t: NumToken): Frac {
   return frac(t.n, t.d)
 }
 
-export function tokenKey(t: NumToken): string {
-  return `${t.n}/${t.d}/${t.form}`
+export function tokenKey(t: Token): string {
+  return isExpr(t) ? `x:${t.c.join(',')}` : `${t.n}/${t.d}/${t.form}`
 }
 
 export type FormIssue = 'not-reduced' | 'improper' | 'as-percent' | 'as-decimal'
@@ -21,7 +22,9 @@ export type FormIssue = 'not-reduced' | 'improper' | 'as-percent' | 'as-decimal'
  * `expected` er feltets krævede form (kun sat på decimal- og procentniveauer).
  * Returnerer grunden, hvis ikke.
  */
-export function formIssue(t: NumToken, level: LevelInfo, expected?: Form): FormIssue | null {
+export function formIssue(t: Token, level: LevelInfo, expected?: Form): FormIssue | null {
+  // Udtryk står altid på reduceret form med højeste potens først.
+  if (isExpr(t)) return null
   if (expected === 'dec' || expected === 'pct') {
     if (t.form === expected) return null
     return expected === 'pct' ? 'as-percent' : 'as-decimal'
@@ -62,7 +65,7 @@ export interface BoardResult {
   wrongCount: number
 }
 
-function valueAt(key: CellKey, cells: Map<CellKey, PuzzleCell>, board: Board, puzzle: Puzzle): NumToken | null {
+function valueAt(key: CellKey, cells: Map<CellKey, PuzzleCell>, board: Board, puzzle: Puzzle): Token | null {
   const cell = cells.get(key)
   if (!cell) return null
   if (cell.kind === 'given') return cell.value
@@ -84,14 +87,9 @@ export function evaluateEquation(
   const vals = eq.nums.map((k) => valueAt(k, cells, board, puzzle))
   const result: EquationResult = { status: 'incomplete', formIssues: [], trapHits: [] }
   if (vals.some((v) => v === null)) return result
-  const [a, b, c] = vals as NumToken[]
-
-  let ok: boolean
-  try {
-    ok = equals(apply(eq.op, tokenValue(a), tokenValue(b)), tokenValue(c))
-  } catch {
-    ok = false // fx division med 0
-  }
+  const [a, b, c] = vals as Token[]
+  const left = papply(eq.op, tokenPoly(a), tokenPoly(b)) // null ved fx division med 0
+  let ok = left !== null && pequals(left, tokenPoly(c))
 
   // Skriveform tjekkes kun for de brikker, eleven selv har lagt.
   for (const key of eq.nums) {

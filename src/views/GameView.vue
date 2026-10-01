@@ -21,6 +21,7 @@ const topic = game ? topicInfo(game.level.topic) : null
 const ruleText = computed(() => {
   if (!game || !puzzle) return ''
   const l = game.level
+  if (l.form === 'expr') return 'Udtrykkene på hver side af = skal være ens – for alle værdier af x.'
   if (l.form === 'dec') {
     const hasPercent = puzzle.equations.some((e) => e.op === 'af')
     return hasPercent ? 'Procenter skrives med %, alle andre tal som decimaltal.' : ''
@@ -143,7 +144,7 @@ function goNext() {
     <p v-else-if="game.notice.value" class="panel notice" aria-live="polite">{{ game.notice.value }}</p>
 
     <section v-if="game.hintSteps.value" class="panel hint-steps" aria-live="polite">
-      <p class="summary">Mellemregning for den markerede ligning</p>
+      <p class="summary">{{ game.hintTitle.value }}</p>
       <ol>
         <li v-for="line in game.hintSteps.value" :key="line">{{ line }}</li>
       </ol>
@@ -178,12 +179,20 @@ function goNext() {
 
     <details class="hints">
       <summary>Brug for hjælp?</summary>
-      <div class="hint-buttons">
+      <div class="hint-buttons" :class="{ four: game.level.form === 'expr' }">
         <button type="button" :disabled="game.solved.value" @click="game.hintWhere()">
           Hvor starter jeg?<small>koster 1 ☆</small>
         </button>
         <button type="button" :disabled="game.solved.value" @click="game.hintExplain()">
           Vis mellemregning<small>koster 1 ☆</small>
+        </button>
+        <button
+          v-if="game.level.form === 'expr'"
+          type="button"
+          :disabled="game.solved.value"
+          @click="game.hintSubstitute()"
+        >
+          Indsæt et tal<small>koster 1 ☆</small>
         </button>
         <button type="button" :disabled="game.solved.value" @click="game.hintPlace()">
           Placér en brik<small>højst 1 ★</small>
@@ -295,6 +304,9 @@ function goNext() {
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-top: 8px;
+}
+.hint-buttons.four {
+  grid-template-columns: repeat(2, 1fr);
 }
 .hint-buttons button {
   display: flex;

@@ -1,4 +1,5 @@
-import type { Form, NumToken, Op } from './fraction'
+import type { Form, Op } from './fraction'
+import type { Token } from './value'
 
 /** Nøgle for et felt i gitteret: "række,kolonne". */
 export type CellKey = string
@@ -8,7 +9,7 @@ export function cellKey(r: number, c: number): CellKey {
 }
 
 export type PuzzleCell =
-  | { r: number; c: number; kind: 'given'; value: NumToken }
+  | { r: number; c: number; kind: 'given'; value: Token }
   /** `form`: den skriveform, brikken i feltet skal have (kun på decimal- og procentniveauer). */
   | { r: number; c: number; kind: 'blank'; form?: Form }
   | { r: number; c: number; kind: 'op'; op: Op }
@@ -45,6 +46,16 @@ export type MisconceptionKind =
   | 'pct-no-100'
   | 'pct-flip'
   | 'pct-mul-instead'
+  | 'alg-add-exponents'
+  | 'alg-unlike'
+  | 'alg-minus-paren'
+  | 'alg-mul-degree'
+  | 'alg-mul-add-coef'
+  | 'alg-distribute-first'
+  | 'alg-foil-cross'
+  | 'alg-conj-sign'
+  | 'alg-div-degree'
+  | 'alg-divide-first'
 
 /** En fælde-brik: svaret man får ved en typisk fejl i en bestemt ligning. */
 export interface Trap {
@@ -66,7 +77,7 @@ export interface Puzzle {
   cells: PuzzleCell[]
   equations: Equation[]
   /** Brikkerne i bunken (rigtige brikker + fælder), i den rækkefølge de vises. */
-  tiles: NumToken[]
+  tiles: Token[]
   /** Alle gyldige løsninger: felt -> brik-indeks. Normalt præcis én. */
   solutions: Record<CellKey, number>[]
   traps: Trap[]

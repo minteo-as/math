@@ -49,6 +49,18 @@ export const MISCONCEPTION_TEXT: Record<MisconceptionKind, string> = {
   'pct-no-100': 'Delen divideret med det hele giver et decimaltal. Det skal ganges med 100 for at blive til procent.',
   'pct-flip': 'Du har divideret det hele med delen. Procenten er delen divideret med det hele.',
   'pct-mul-instead': 'For at finde det hele skal du dividere med procenten (fx 20 : 0,25) – ikke gange.',
+  'alg-add-exponents':
+    'Når ensartede led lægges sammen eller trækkes fra, ændrer potensen sig ikke: 2x + 3x = 5x – ikke 5x².',
+  'alg-unlike': 'Kun ensartede led kan samles. x²-led, x-led og tal skal holdes hver for sig.',
+  'alg-minus-paren': 'Står der minus foran en parentes, skal fortegnet skiftes på ALLE led i parentesen.',
+  'alg-mul-degree': 'x · x = x². Husk at gange både tallene og x’erne.',
+  'alg-mul-add-coef': 'Tallene foran skal ganges, ikke lægges sammen: 2x · 3x = 6x².',
+  'alg-distribute-first': 'Når du ganger ind i en parentes, skal du gange med hvert led i parentesen.',
+  'alg-foil-cross':
+    'Hvert led i den ene parentes skal ganges med hvert led i den anden. Du mangler leddet i midten – fx det dobbelte produkt i (a + b)² = a² + 2ab + b².',
+  'alg-conj-sign': '(a + b)(a − b) = a² − b². Det sidste led får minus.',
+  'alg-div-degree': 'x² : x = x. Husk at dividere både tallene og x’erne.',
+  'alg-divide-first': 'Når et udtryk med flere led divideres, skal hvert led divideres.',
 }
 
 export interface TrapCandidate {

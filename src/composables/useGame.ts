@@ -1,10 +1,9 @@
 import { computed, reactive, ref } from 'vue'
-import { tokenText } from '../engine/fraction'
-import { blankKeys, evaluateBoard, tokenKey, tokenValue, type Board, type BoardResult } from '../engine/evaluate'
-import { explainSteps, findHintTarget, solutionValues, starsFor, type HintTarget } from '../engine/hints'
+import { blankKeys, evaluateBoard, tokenKey, type Board, type BoardResult } from '../engine/evaluate'
+import { pequals, tokenPoly, valueText } from '../engine/value'
+import { explainSteps, findHintTarget, solutionValues, starsFor, substitutionHint, type HintTarget } from '../engine/hints'
 import { levelInfo } from '../engine/levels'
 import { MISCONCEPTION_TEXT } from '../engine/misconceptions'
-import { equals } from '../engine/fraction'
 import type { CellKey, Puzzle } from '../engine/types'
 import { recordStars } from '../progress'
 
@@ -36,6 +35,7 @@ export function useGame(puzzle: Puzzle) {
 
   const hintTarget = ref<HintTarget | null>(null)
   const hintSteps = ref<string[] | null>(null)
+  const hintTitle = ref('')
 
   const placed = computed(() => new Set(Object.values(board).filter((t): t is number => t !== null)))
   const bank = computed(() => puzzle.tiles.map((_, i) => i).filter((i) => !placed.value.has(i)))
@@ -111,7 +111,7 @@ export function useGame(puzzle: Puzzle) {
       for (const eq of r.equations) {
         for (const issue of eq.formIssues) {
           const tile = puzzle.tiles[board[issue.cell]!]
-          messages.push(`${tokenText(tile)}: ${MISCONCEPTION_TEXT[issue.kind]}`)
+          messages.push(`${valueText(tile)}: ${MISCONCEPTION_TEXT[issue.kind]}`)
         }
       }
     }
@@ -150,6 +150,18 @@ export function useGame(puzzle: Puzzle) {
     smallHints.value++
     hintTarget.value = target
     hintSteps.value = explainSteps(puzzle, target, level)
+    hintTitle.value = 'Mellemregning for den markerede ligning'
+  }
+
+  /** Kun algebra: "Indsæt et tal" – hvad skal det manglende udtryk give for et bestemt x? */
+  function hintSubstitute() {
+    if (solved.value) return
+    const target = findHintTarget(puzzle, board)
+    if (!target || !target.single) return
+    smallHints.value++
+    hintTarget.value = target
+    hintSteps.value = substitutionHint(puzzle, target)
+    hintTitle.value = 'Sæt et tal ind for x'
   }
 
   function hintPlace() {
@@ -158,7 +170,7 @@ export function useGame(puzzle: Puzzle) {
     if (!target) return
     const truth = solutionValues(puzzle)
     const want = puzzle.tiles[puzzle.solutions[0][target.cell]]
-    const isRightAt = (tile: number, cell: CellKey) => equals(tokenValue(puzzle.tiles[tile]), truth.get(cell)!)
+    const isRightAt = (tile: number, cell: CellKey) => pequals(tokenPoly(puzzle.tiles[tile]), truth.get(cell)!)
     // Find en brik med den rigtige påskrift – helst fra bunken, ellers fra et felt hvor den ligger forkert.
     const candidates = puzzle.tiles
       .map((t, i) => ({ i, key: tokenKey(t) }))
@@ -204,6 +216,7 @@ export function useGame(puzzle: Puzzle) {
     notice,
     hintTarget,
     hintSteps,
+    hintTitle,
     place,
     toBank,
     tapTile,
@@ -211,6 +224,7 @@ export function useGame(puzzle: Puzzle) {
     check,
     hintWhere,
     hintExplain,
+    hintSubstitute,
     hintPlace,
     restart,
   }

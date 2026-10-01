@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest'
 import data from '../data/puzzles.json'
 import { cellMap, evaluateBoard, expectedForm, formIssue, type Board } from './evaluate'
 import { layoutOf } from './generator'
-import { explainSteps, findHintTarget } from './hints'
+import { explainSteps, findHintTarget, substitutionHint } from './hints'
 import { levelInfo } from './levels'
 import { deductionOrder, findSolutions } from './solver'
-import { tokenText } from './fraction'
+import { pequals, pevalAt, tokenPoly, valueText } from './value'
+import { equals } from './fraction'
 import { TEMPLATES } from './templates'
 import type { PuzzleFile } from './types'
 
@@ -69,14 +70,29 @@ describe.each(file.puzzles.map((p) => [p.id, p] as const))('bane %s', (_id, puzz
   })
 
   it('alle tal kan vises (decimaltal skal ende)', () => {
-    for (const t of puzzle.tiles) expect(() => tokenText(t)).not.toThrow()
-    for (const c of puzzle.cells) if (c.kind === 'given') expect(() => tokenText(c.value)).not.toThrow()
+    for (const t of puzzle.tiles) expect(() => valueText(t)).not.toThrow()
+    for (const c of puzzle.cells) if (c.kind === 'given') expect(() => valueText(c.value)).not.toThrow()
   })
 
   it('krævet skriveform: på decimalniveauer har alle tomme felter en form', () => {
     const blanks = puzzle.cells.filter((c) => c.kind === 'blank')
     if (level.form === 'dec') expect(blanks.every((c) => c.kind === 'blank' && c.form)).toBe(true)
     else expect(blanks.some((c) => c.kind === 'blank' && c.form)).toBe(false)
+  })
+
+  it('"Indsæt et tal" kan skelne den rigtige brik fra de andre (algebra)', () => {
+    if (level.form !== 'expr') return
+    const target = findHintTarget(puzzle, {})!
+    const eq = puzzle.equations[target.equation]
+    const correct = tokenPoly(puzzle.tiles[puzzle.solutions[0][target.cell]])
+    const lines = substitutionHint(puzzle, target)
+    const x = Number(/x = (\d+)/.exec(lines[0])![1])
+    const v = pevalAt(correct, x)
+    for (const t of puzzle.tiles) {
+      const tp = tokenPoly(t)
+      if (!pequals(tp, correct)) expect(equals(pevalAt(tp, x), v)).toBe(false)
+    }
+    expect(eq.nums).toContain(target.cell)
   })
 
   it('hints virker fra et tomt bræt', () => {
