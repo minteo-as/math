@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import FractionView from '../components/FractionView.vue'
 import PuzzleGrid from '../components/PuzzleGrid.vue'
@@ -32,6 +32,63 @@ const ruleText = computed(() => {
   return ''
 })
 
+// ---------- Brættet scroller, resten står fast ----------
+
+const boardWrap = ref<HTMLElement | null>(null)
+const bottom = ref<HTMLElement | null>(null)
+
+/** Vis et felt på brættet, hvis det er scrollet ud af syne. */
+function reveal(selector: string, block: ScrollLogicalPosition) {
+  nextTick(() => boardWrap.value?.querySelector(selector)?.scrollIntoView({ block, inline: 'nearest', behavior: 'smooth' }))
+}
+
+/** Ny besked eller nyt hint øverst i bunden: rul bunden op, så teksten kan ses. */
+function showMessages() {
+  nextTick(() => bottom.value?.scrollTo({ top: 0, behavior: 'smooth' }))
+}
+
+if (game) {
+  watch(game.hintTarget, (t) => t && reveal('.cell.target', 'center'))
+  watch(game.feedback, (f) => f && f.wrongEquations.length > 0 && reveal('.cell.wrong', 'nearest'))
+  watch([game.feedback, game.notice, game.hintSteps, game.hintTarget], (now, before) => {
+    if (now.some((v, i) => v && v !== before[i])) showMessages()
+  })
+}
+
+/** Når hjælpen foldes ud, skal knapperne kunne ses. */
+function hintsToggled(event: Event) {
+  if (!(event.target as HTMLDetailsElement).open) return
+  nextTick(() => bottom.value?.scrollTo({ top: bottom.value.scrollHeight, behavior: 'smooth' }))
+}
+
+// Under træk: hold brikken nær kanten af brættet for at scrolle.
+const EDGE = 48
+let edgeSpeed = 0
+let edgeFrame = 0
+
+function edgeScroll() {
+  if (!boardWrap.value || edgeSpeed === 0) {
+    edgeFrame = 0
+    return
+  }
+  boardWrap.value.scrollTop += edgeSpeed
+  edgeFrame = requestAnimationFrame(edgeScroll)
+}
+
+function updateEdge(y: number) {
+  const r = boardWrap.value?.getBoundingClientRect()
+  edgeSpeed = 0
+  if (r && y >= r.top && y < r.top + EDGE) edgeSpeed = -Math.ceil((r.top + EDGE - y) / 4)
+  else if (r && y <= r.bottom && y > r.bottom - EDGE) edgeSpeed = Math.ceil((y - (r.bottom - EDGE)) / 4)
+  if (edgeSpeed !== 0 && !edgeFrame) edgeFrame = requestAnimationFrame(edgeScroll)
+}
+
+function stopEdge() {
+  edgeSpeed = 0
+  cancelAnimationFrame(edgeFrame)
+  edgeFrame = 0
+}
+
 // ---------- Træk og slip (virker med både mus og finger) ----------
 
 const drag = reactive({ tile: null as number | null, x: 0, y: 0 })
@@ -53,6 +110,7 @@ function startDrag(event: PointerEvent, tile: number) {
     if (active) {
       drag.x = e.clientX
       drag.y = e.clientY
+      updateEdge(e.clientY)
       e.preventDefault()
     }
   }
@@ -68,6 +126,7 @@ function startDrag(event: PointerEvent, tile: number) {
     setTimeout(() => (suppressClick = false), 0)
   }
   const stop = () => {
+    stopEdge()
     window.removeEventListener('pointermove', move)
     window.removeEventListener('pointerup', up)
     window.removeEventListener('pointercancel', cancel)
@@ -108,7 +167,7 @@ function goNext() {
     <RouterLink to="/">Til forsiden</RouterLink>
   </div>
 
-  <div v-else class="page game">
+  <div v-else class="page game" :class="{ 'many-tiles': puzzle.tiles.length > 9 }">
     <header class="topbar">
       <RouterLink class="icon-btn" :to="{ name: 'level', params: { level: puzzle.level } }" aria-label="Tilbage">←</RouterLink>
       <div class="title">
@@ -120,7 +179,7 @@ function goNext() {
 
     <p v-if="ruleText" class="rule">{{ ruleText }}</p>
 
-    <div class="board-wrap">
+    <div ref="boardWrap" class="board-wrap">
       <PuzzleGrid
         :puzzle="puzzle"
         :board="game.board"
@@ -135,70 +194,72 @@ function goNext() {
       />
     </div>
 
-    <section v-if="game.feedback.value && !game.solved.value" class="panel feedback" aria-live="polite">
-      <p class="summary">✗ {{ game.feedback.value.summary }}</p>
-      <ul v-if="game.feedback.value.messages.length">
-        <li v-for="m in game.feedback.value.messages" :key="m">{{ m }}</li>
-      </ul>
-    </section>
-    <p v-else-if="game.notice.value" class="panel notice" aria-live="polite">{{ game.notice.value }}</p>
+    <div ref="bottom" class="bottom">
+      <section v-if="game.feedback.value && !game.solved.value" class="panel feedback" aria-live="polite">
+        <p class="summary">✗ {{ game.feedback.value.summary }}</p>
+        <ul v-if="game.feedback.value.messages.length">
+          <li v-for="m in game.feedback.value.messages" :key="m">{{ m }}</li>
+        </ul>
+      </section>
+      <p v-else-if="game.notice.value" class="panel notice" aria-live="polite">{{ game.notice.value }}</p>
 
-    <section v-if="game.hintSteps.value" class="panel hint-steps" aria-live="polite">
-      <p class="summary">{{ game.hintTitle.value }}</p>
-      <ol>
-        <li v-for="line in game.hintSteps.value" :key="line">{{ line }}</li>
-      </ol>
-    </section>
-    <p v-else-if="game.hintTarget.value" class="panel hint-steps" aria-live="polite">
-      {{
-        game.hintTarget.value.single
-          ? 'Start med den markerede ligning – der mangler kun ét tal.'
-          : 'Kig på den markerede ligning og brikkerne: hvilke passer?'
-      }}
-    </p>
+      <section v-if="game.hintSteps.value" class="panel hint-steps" aria-live="polite">
+        <p class="summary">{{ game.hintTitle.value }}</p>
+        <ol>
+          <li v-for="line in game.hintSteps.value" :key="line">{{ line }}</li>
+        </ol>
+      </section>
+      <p v-else-if="game.hintTarget.value" class="panel hint-steps" aria-live="polite">
+        {{
+          game.hintTarget.value.single
+            ? 'Start med den markerede ligning – der mangler kun ét tal.'
+            : 'Kig på den markerede ligning og brikkerne: hvilke passer?'
+        }}
+      </p>
 
-    <TileBank
-      :tiles="puzzle.tiles"
-      :bank="game.bank.value"
-      :selected="game.selected.value"
-      :dragging="drag.tile"
-      :disabled="game.solved.value"
-      @tap-tile="tapTile"
-      @tap-bank="tapBank"
-      @drag-start="startDrag"
-    />
+      <TileBank
+        :tiles="puzzle.tiles"
+        :bank="game.bank.value"
+        :selected="game.selected.value"
+        :dragging="drag.tile"
+        :disabled="game.solved.value"
+        @tap-tile="tapTile"
+        @tap-bank="tapBank"
+        @drag-start="startDrag"
+      />
 
-    <div class="actions">
-      <button type="button" class="primary" :disabled="!game.complete.value || game.solved.value" @click="game.check()">
-        Tjek
-      </button>
-      <div class="potential" :aria-label="`Du kan få ${game.potentialStars.value} stjerner`">
-        <StarRow :stars="game.potentialStars.value" />
+      <div class="actions">
+        <button type="button" class="primary" :disabled="!game.complete.value || game.solved.value" @click="game.check()">
+          Tjek
+        </button>
+        <div class="potential" :aria-label="`Du kan få ${game.potentialStars.value} stjerner`">
+          <StarRow :stars="game.potentialStars.value" />
+        </div>
       </div>
+
+      <details class="hints" @toggle="hintsToggled">
+        <summary>Brug for hjælp?</summary>
+        <div class="hint-buttons" :class="{ four: game.level.form === 'expr' }">
+          <button type="button" :disabled="game.solved.value" @click="game.hintWhere()">
+            Hvor starter jeg?<small>koster 1 ☆</small>
+          </button>
+          <button type="button" :disabled="game.solved.value" @click="game.hintExplain()">
+            Vis mellemregning<small>koster 1 ☆</small>
+          </button>
+          <button
+            v-if="game.level.form === 'expr'"
+            type="button"
+            :disabled="game.solved.value"
+            @click="game.hintSubstitute()"
+          >
+            Indsæt et tal<small>koster 1 ☆</small>
+          </button>
+          <button type="button" :disabled="game.solved.value" @click="game.hintPlace()">
+            Placér en brik<small>højst 1 ★</small>
+          </button>
+        </div>
+      </details>
     </div>
-
-    <details class="hints">
-      <summary>Brug for hjælp?</summary>
-      <div class="hint-buttons" :class="{ four: game.level.form === 'expr' }">
-        <button type="button" :disabled="game.solved.value" @click="game.hintWhere()">
-          Hvor starter jeg?<small>koster 1 ☆</small>
-        </button>
-        <button type="button" :disabled="game.solved.value" @click="game.hintExplain()">
-          Vis mellemregning<small>koster 1 ☆</small>
-        </button>
-        <button
-          v-if="game.level.form === 'expr'"
-          type="button"
-          :disabled="game.solved.value"
-          @click="game.hintSubstitute()"
-        >
-          Indsæt et tal<small>koster 1 ☆</small>
-        </button>
-        <button type="button" :disabled="game.solved.value" @click="game.hintPlace()">
-          Placér en brik<small>højst 1 ★</small>
-        </button>
-      </div>
-    </details>
 
     <div v-if="game.solved.value" class="overlay" role="dialog" aria-modal="true" aria-labelledby="done-title">
       <div class="dialog">
@@ -227,10 +288,16 @@ function goNext() {
 
 <style scoped>
 .game {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   --tile: 58px;
+}
+/* Mange brikker: lidt mindre brikker, så bunden ikke tager pladsen fra brættet. */
+.game.many-tiles {
+  --tile: 48px;
 }
 .topbar {
   display: flex;
@@ -253,9 +320,30 @@ function goNext() {
   font-size: 14px;
   color: var(--muted);
 }
+/* Brættet fylder pladsen mellem top og bund og scroller selv. Det går ud i sidemargenen,
+   så ✗/✓-mærkerne i kanten ikke bliver skåret af. */
 .board-wrap {
-  padding: 16px 0 8px;
-  overflow: visible;
+  flex: 1 1 0;
+  min-height: 0;
+  margin: 0 -16px;
+  padding: 12px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-block: 1px solid #e3e7ef;
+}
+.bottom {
+  flex: 0 0 auto;
+  max-height: 55%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.topbar,
+.rule,
+.bottom > * {
+  flex: none;
 }
 .panel {
   margin: 0;

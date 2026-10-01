@@ -154,6 +154,10 @@ const cells = computed(() =>
 .cell-blank {
   background: var(--blank-bg);
   cursor: pointer;
+  touch-action: manipulation;
+}
+/* En lagt brik kan trækkes – så må fingeren ikke scrolle brættet. Tomme felter kan godt. */
+.cell-blank.filled:not(.locked) {
   touch-action: none;
 }
 .cell-blank.filled {
