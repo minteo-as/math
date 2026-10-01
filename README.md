@@ -21,7 +21,25 @@ npm run generate   # lav banerne igen (src/data/puzzles.json)
 - tjekker, at `src/data/puzzles.json` passer til generatoren,
 - bygger og gemmer `dist/` som en zip (under *Artifacts* på workflow-kørslen, gemmes i 30 dage).
 
-Zip-filen indeholder `index.html` og `assets/` direkte i roden og kan pakkes ud på webserveren, som den er.
+Zip-filen indeholder `index.html`, `.htaccess` og `assets/` direkte i roden og kan pakkes ud på webserveren, som den er.
+
+## Webserver og cache
+
+`public/.htaccess` kommer automatisk med i `dist/`. Den sætter cache-regler på Apache (fx Simply.com):
+
+- `index.html` sendes med `Cache-Control: no-cache`, så browseren altid tjekker, om der er en ny version.
+- Filerne i `assets/` har et hash i navnet og må caches i et år (`immutable`).
+
+Uden reglerne kan en browser genbruge en gammel `index.html` efter et deploy. Den peger så på JavaScript-filer, der ikke længere findes, og eleven ser en tom side.
+
+Kræver at serveren tillader `.htaccess` med `Header` (`AllowOverride FileInfo` og `mod_headers`).
+
+Tjek efter deploy:
+
+```bash
+curl -sI https://math.sundskard.dk/ | grep -i cache-control                 # no-cache
+curl -sI https://math.sundskard.dk/assets/<js-fil> | grep -i cache-control  # max-age=31536000, immutable
+```
 
 ## Versioner og releases
 
