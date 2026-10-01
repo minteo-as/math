@@ -6,6 +6,8 @@ import { reactive } from 'vue'
  * Hvis localStorage ikke er tilgængelig (privat vindue, blokeret), virker
  * spillet stadig – stjernerne bliver bare ikke husket.
  */
+// Nøglen hedder stadig "broekkryds" fra spillets første navn. Den må ikke ændres,
+// for så mister eleverne de stjerner, de allerede har gemt.
 const KEY = 'broekkryds.progress.v1'
 
 interface Progress {

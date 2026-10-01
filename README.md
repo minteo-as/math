@@ -1,4 +1,4 @@
-# Brøkkryds
+# Matkryds
 
 Et krydsregne-spil med brøker, decimaltal og procent til 9. klasse. Kører i browseren (Vue 3), uden backend og uden login.
 Elevens stjerner gemmes kun i browserens `localStorage`.
@@ -46,7 +46,7 @@ Det starter `.github/workflows/release.yml`. Først tjekker den:
 Derefter:
 
 - kører den de samme tjek som CI og bygger med tagget som version,
-- lægger den `broekkryds-vX.Y.Z.zip` på releasen,
+- lægger den `matkryds-vX.Y.Z.zip` på releasen,
 - committer den den nye version i `package.json` til `main`.
 
 Fejler noget, før zip-filen er lagt op, sættes releasen tilbage til **kladde** (draft), og fejlen står i workflow-kørslen. Ret fejlen, og udgiv kladden igen (eventuelt med et andet tag).
