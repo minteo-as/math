@@ -151,12 +151,6 @@ export function valueText(t: Token, compact = false): string {
   return isExpr(t) ? exprText(t.c, compact) : tokenText(t)
 }
 
-export function polyText(p: Poly): string {
-  const c = intCoeffs(p)
-  if (c) return exprText(c)
-  return p.map((f, i) => `${tokenText({ n: f.n, d: f.d, form: 'frac' })}x^${i}`).join(' + ')
-}
-
 /** a + b + c → hver term for sig: [koefficient, potens], højeste potens først. */
 export function terms(p: Poly): [Frac, number][] {
   const out: [Frac, number][] = []

@@ -14,14 +14,18 @@ const props = withDefaults(
   { paren: false, fit: true },
 )
 
-const label = computed(() => valueText(props.value))
+/** Skal udtrykket i parentes her? Kun udtryk med flere led, og kun hvor feltet beder om det. */
+const wrapped = computed(() => props.paren && isExpr(props.value) && termCount(props.value.c) > 1)
+
+// Skærmlæsere skal høre den samme parentes, som står på skærmen – ellers ændres betydningen.
+const label = computed(() => (wrapped.value ? `(${valueText(props.value)})` : valueText(props.value)))
 
 /** Udtryk vises som én tekst uden mellemrum, fx "x²+6x+9". */
 const expr = computed(() => {
   const v = props.value
   if (!isExpr(v)) return null
   const text = exprText(v.c, true)
-  return props.paren && termCount(v.c) > 1 ? `(${text})` : text
+  return wrapped.value ? `(${text})` : text
 })
 
 const p = computed(() => (isExpr(props.value) ? null : parts(props.value)))
