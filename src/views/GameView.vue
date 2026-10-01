@@ -60,10 +60,27 @@ if (game) {
   })
 }
 
-/** Når hjælpen foldes ud, skal knapperne kunne ses. */
-function hintsToggled(event: Event) {
-  if (!(event.target as HTMLDetailsElement).open) return
-  nextTick(() => bottom.value?.scrollTo({ top: bottom.value.scrollHeight, behavior: scrollBehavior() }))
+// ---------- Hjælpemenuen ("?") ----------
+
+const helpOpen = ref(false)
+const helpButton = ref<HTMLButtonElement | null>(null)
+const helpMenu = ref<HTMLElement | null>(null)
+
+function openHelp() {
+  helpOpen.value = true
+  nextTick(() => helpMenu.value?.querySelector<HTMLButtonElement>('button')?.focus())
+}
+
+function closeHelp() {
+  if (!helpOpen.value) return
+  helpOpen.value = false
+  nextTick(() => helpButton.value?.focus())
+}
+
+/** Vælg et hint og luk menuen. */
+function useHint(hint: () => void) {
+  hint()
+  closeHelp()
 }
 
 // Under træk: hold brikken nær kanten af brættet for at scrolle.
@@ -222,48 +239,57 @@ function goNext() {
         }}
       </p>
 
-      <TileBank
-        :tiles="puzzle.tiles"
-        :bank="game.bank.value"
-        :selected="game.selected.value"
-        :dragging="drag.tile"
-        :disabled="game.solved.value"
-        @tap-tile="tapTile"
-        @tap-bank="tapBank"
-        @drag-start="startDrag"
-      />
-
-      <div class="actions">
-        <button type="button" class="primary" :disabled="!game.complete.value || game.solved.value" @click="game.check()">
-          Tjek
-        </button>
-        <div class="potential" :aria-label="`Du kan få ${game.potentialStars.value} stjerner`">
-          <StarRow :stars="game.potentialStars.value" />
-        </div>
-      </div>
-
-      <details class="hints" @toggle="hintsToggled">
-        <summary>Brug for hjælp?</summary>
-        <div class="hint-buttons" :class="{ four: game.level.form === 'expr' }">
-          <button type="button" :disabled="game.solved.value" @click="game.hintWhere()">
-            Hvor starter jeg?<small>koster 1 ☆</small>
-          </button>
-          <button type="button" :disabled="game.solved.value" @click="game.hintExplain()">
-            Vis mellemregning<small>koster 1 ☆</small>
+      <div class="dock">
+        <TileBank
+          class="dock-bank"
+          :tiles="puzzle.tiles"
+          :bank="game.bank.value"
+          :selected="game.selected.value"
+          :dragging="drag.tile"
+          :disabled="game.solved.value"
+          @tap-tile="tapTile"
+          @tap-bank="tapBank"
+          @drag-start="startDrag"
+        />
+        <div class="side">
+          <div class="potential" :aria-label="`Du kan få ${game.potentialStars.value} stjerner`">
+            <StarRow :stars="game.potentialStars.value" />
+          </div>
+          <button
+            type="button"
+            class="primary check"
+            :disabled="!game.complete.value || game.solved.value"
+            @click="game.check()"
+          >
+            Tjek
           </button>
           <button
-            v-if="game.level.form === 'expr'"
+            ref="helpButton"
             type="button"
+            class="help-btn"
+            aria-label="Brug for hjælp?"
+            aria-haspopup="dialog"
+            :aria-expanded="helpOpen"
             :disabled="game.solved.value"
-            @click="game.hintSubstitute()"
+            @click="openHelp"
           >
-            Indsæt et tal<small>koster 1 ☆</small>
-          </button>
-          <button type="button" :disabled="game.solved.value" @click="game.hintPlace()">
-            Placér en brik<small>højst 1 ★</small>
+            ?
           </button>
         </div>
-      </details>
+      </div>
+    </div>
+
+    <div v-if="helpOpen" class="help-backdrop" @click.self="closeHelp" @keydown.esc="closeHelp">
+      <div ref="helpMenu" class="help-menu" role="dialog" aria-modal="true" aria-labelledby="help-title">
+        <p id="help-title" class="help-title">Brug for hjælp?</p>
+        <button type="button" @click="useHint(game.hintWhere)">Hvor starter jeg?<small>koster 1 ☆</small></button>
+        <button type="button" @click="useHint(game.hintExplain)">Vis mellemregning<small>koster 1 ☆</small></button>
+        <button v-if="game.level.form === 'expr'" type="button" @click="useHint(game.hintSubstitute)">
+          Indsæt et tal<small>koster 1 ☆</small>
+        </button>
+        <button type="button" @click="useHint(game.hintPlace)">Placér en brik<small>højst 1 ★</small></button>
+        <button type="button" class="help-close" @click="closeHelp">Luk</button>
+      </div>
     </div>
 
     <div v-if="game.solved.value" class="overlay" role="dialog" aria-modal="true" aria-labelledby="done-title">
@@ -379,39 +405,91 @@ function goNext() {
   background: var(--hint-bg);
   border: 1px solid var(--hint-ring);
 }
-.actions {
+.dock {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  gap: 6px;
+  align-items: stretch;
 }
-.actions .primary {
+/* Bunken deler bredden med Tjek-kolonnen – lidt mindre luft, så 4 brikker kan stå på en række. */
+.dock .dock-bank {
   flex: 1;
+  min-width: 0;
+  padding: 12px 8px;
 }
-.hints summary {
-  cursor: pointer;
-  color: var(--muted);
-  padding: 4px 0;
-}
-.hint-buttons {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-top: 8px;
-}
-.hint-buttons.four {
-  grid-template-columns: repeat(2, 1fr);
-}
-.hint-buttons button {
+.side {
+  flex: none;
+  width: 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 10px 6px;
-  font-size: 14px;
+  gap: 8px;
 }
-.hint-buttons small {
+.side .potential :deep(.stars) {
+  font-size: 15px;
+}
+.check {
+  flex: 1;
+  align-self: stretch;
+  min-height: 58px;
+  padding: 0;
+  border-radius: 14px;
+  font-size: 16px;
+}
+.help-btn {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 700;
   color: var(--muted);
-  font-size: 12px;
+}
+.help-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.18);
+  z-index: 15;
+}
+.help-menu {
+  width: min(var(--page-max) - 32px, 100%);
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.22);
+}
+.help-title {
+  margin: 0;
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.help-menu button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  font-size: 16px;
+  text-align: left;
+}
+.help-menu small {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.help-menu .help-close {
+  justify-content: center;
+  color: var(--muted);
+  border: none;
+  background: none;
 }
 .overlay {
   position: fixed;

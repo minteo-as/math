@@ -91,7 +91,7 @@ Tommelfingerregel for versionsnumre:
   - de øvrige niveauer: hvilke ligninger der er forkerte
   - (mulighed til svære niveauer senere: kun hvor mange ligninger der er forkerte)
   - Uanset niveau vises det, hvis en brik har den rigtige værdi, men står på den forkerte form.
-- **Hints:** Hvor starter jeg? · Vis mellemregning · Placér en brik.
+- **Hints** (under ?-knappen ved siden af Tjek): Hvor starter jeg? · Vis mellemregning · Placér en brik.
 - **Stjerner** (intet ur):
   - ★★★ ingen fejlede tjek og ingen hints
   - ★★ højst ét fejlet tjek eller ét lille hint
