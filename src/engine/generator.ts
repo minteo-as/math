@@ -238,7 +238,7 @@ export function generatorLevels(): string[] {
   return Object.keys(GENERATORS)
 }
 
-interface Layout {
+export interface Layout {
   rows: number
   cols: number
   equations: { nums: [CellKey, CellKey, CellKey]; cells: CellKey[] }[]
@@ -508,7 +508,7 @@ function isFormTrap(kind: string): boolean {
 }
 
 /** Bland brikkerne og opdater alle indeks, der peger på dem. */
-function shuffleTiles(puzzle: Puzzle, rng: Rng) {
+export function shuffleTiles(puzzle: Puzzle, rng: Rng) {
   const order = rng.shuffle(puzzle.tiles.map((_, i) => i))
   const newIndex = new Map(order.map((oldI, newI) => [oldI, newI]))
   puzzle.tiles = order.map((i) => puzzle.tiles[i])

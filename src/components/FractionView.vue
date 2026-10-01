@@ -1,21 +1,61 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { parts, tokenText, type NumToken } from '../engine/fraction'
+import { parts } from '../engine/fraction'
+import { exprText, isExpr, termCount, valueText, type Token } from '../engine/value'
 
-const props = defineProps<{ value: NumToken }>()
-const p = computed(() => parts(props.value))
-const label = computed(() => tokenText(props.value))
+const props = withDefaults(
+  defineProps<{
+    value: Token
+    /** Sæt parentes om udtryk med flere led (bestemmes af feltet, ikke af brikken). */
+    paren?: boolean
+    /** Skru skriften ned, så udtrykket kan være i et felt med fast bredde. */
+    fit?: boolean
+  }>(),
+  { paren: false, fit: true },
+)
+
+const label = computed(() => valueText(props.value))
+
+/** Udtryk vises som én tekst uden mellemrum, fx "x²+6x+9". */
+const expr = computed(() => {
+  const v = props.value
+  if (!isExpr(v)) return null
+  const text = exprText(v.c, true)
+  return props.paren && termCount(v.c) > 1 ? `(${text})` : text
+})
+
+const p = computed(() => (isExpr(props.value) ? null : parts(props.value)))
+
+/** Lange tekster gøres mindre, så de kan være i feltet. */
+function sizeClass(text: string): string {
+  return text.length >= 9 ? 'xlong' : text.length >= 5 ? 'long' : ''
+}
+
+/**
+ * Udtryk skaleres efter længden, så de altid kan være i et felt.
+ * Et felt er ca. 2,9 gange skriftstørrelsen bredt, og et fed tegn ca. 0,62 af den.
+ */
+function exprSize(text: string): string {
+  // Minustegnet er bredt, ² er smalt.
+  const width = [...text].reduce((w, ch) => w + (ch === '−' ? 1.35 : ch === '²' ? 0.55 : 1), 0)
+  // På brikkerne i bunken må teksten ikke blive for lille – de bliver i stedet bredere.
+  const min = props.fit ? 0 : 0.72
+  return `${Math.max(min, Math.min(1.1, 3.8 / width)).toFixed(2)}em`
+}
 </script>
 
 <template>
   <span class="num" :aria-label="label" role="img">
-    <span v-if="p.negative" class="sign">−</span>
-    <span v-if="p.text !== null" class="text" :class="{ long: p.text.length >= 5 }">{{ p.text }}</span>
-    <span v-if="p.whole !== null" class="whole">{{ p.whole }}</span>
-    <span v-if="p.num !== null" class="frac">
-      <span class="top">{{ p.num }}</span>
-      <span class="bottom">{{ p.den }}</span>
-    </span>
+    <span v-if="expr !== null" class="text" :style="{ fontSize: exprSize(expr) }">{{ expr }}</span>
+    <template v-else-if="p">
+      <span v-if="p.negative" class="sign">−</span>
+      <span v-if="p.text !== null" class="text" :class="sizeClass(p.text)">{{ p.text }}</span>
+      <span v-if="p.whole !== null" class="whole">{{ p.whole }}</span>
+      <span v-if="p.num !== null" class="frac">
+        <span class="top">{{ p.num }}</span>
+        <span class="bottom">{{ p.den }}</span>
+      </span>
+    </template>
   </span>
 </template>
 
@@ -40,6 +80,9 @@ const label = computed(() => tokenText(props.value))
 }
 .text.long {
   font-size: 0.85em;
+}
+.text.xlong {
+  font-size: 0.68em;
 }
 .frac {
   display: inline-flex;

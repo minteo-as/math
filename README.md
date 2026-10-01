@@ -1,6 +1,6 @@
 # Matkryds
 
-Et krydsregne-spil med brøker, decimaltal og procent til 9. klasse. Kører i browseren (Vue 3), uden backend og uden login.
+Et krydsregne-spil med brøker, decimaltal, procent og algebra til 9. klasse. Kører i browseren (Vue 3), uden backend og uden login.
 Elevens stjerner gemmes kun i browserens `localStorage`.
 
 ## Kom i gang
@@ -122,13 +122,30 @@ Spillet er delt op i emner. Hvert emne har sine egne niveauer.
 
 På decimal- og procentniveauerne har hvert felt en fast skriveform. Procenter skal skrives med %, og alle andre tal skal skrives som decimaltal. En brik med den rigtige værdi, men i den forkerte form, tæller som forkert.
 
-**Algebra** (kommer): reduktion af udtryk. Ligningsløsning kommer senere som en anden spilmekanik.
+**Algebra** (bane-id'er `A1-01` osv.) – brikkerne er udtryk i x, og `=` betyder, at udtrykkene er ens for alle x.
+
+| Niveau | Indhold | Typiske fejl som fælder |
+|---|---|---|
+| 1 | Saml led (`2x + 3x`) | `5x²`, `x + 3 = 4x` |
+| 2 | Gange og dividere led (`2x · 3x`, `6x² : 2x`) | `6x`, `5x²`, `3x²` |
+| 3 | Parenteser: gange ind, minusparentes, sæt uden for parentes | `3x + 2`, `4x − 1`, `2x + 9` |
+| 4 | To parenteser og kvadratsætninger | `x² + 9`, `x² + 4` |
+
+- Kun variablen x, hele koefficienter, højst grad 2.
+- Parenteser tegnes af feltet: et udtryk med flere led får parentes, når det står i et gange- eller divisionsstykke eller efter et minus. Brikkerne selv har ingen parenteser.
+- Ekstra hint på algebra: **Indsæt et tal**. Det viser, hvad de kendte udtryk giver for et bestemt x, og hvad det manglende udtryk derfor skal give. x vælges, så kun den rigtige brik passer. Hintet koster en stjerne som de andre.
+- Når det ukendte er et led i et gangestykke (`3 · ? = 6x + 9`), øver eleven at sætte uden for parentes.
+
+Ligningsløsning kommer senere som en anden spilmekanik.
 
 ## Struktur
 
 ```
 src/engine/        Ren TypeScript – ingen Vue. Kan testes for sig.
   fraction.ts      Brøkregning og visning (uforkortede brøker bevares)
+  value.ts         Brikker (tal eller udtryk) og polynomieregning – tjek og løser regner på polynomier
+  algebra.ts       Algebra: typiske fejl, mellemregninger og hintet "Indsæt et tal"
+  algebraGenerator.ts  Banegenerator til algebra
   levels.ts        Emner og niveauer med deres regler (forkortning, feedback-type …)
   evaluate.ts      Tjek af brættet
   solver.ts        Løser: entydig løsning? kan den løses skridt for skridt?

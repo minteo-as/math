@@ -38,6 +38,19 @@ const gridStyle = computed(() => {
   }
 })
 
+/**
+ * Felter, hvor et udtryk med flere led skal i parentes for at blive læst rigtigt:
+ * begge led i gange og division, og leddet efter et minus.
+ */
+const parenCells = computed(() => {
+  const set = new Set<CellKey>()
+  for (const eq of props.puzzle.equations) {
+    if (eq.op === '*' || eq.op === ':') set.add(eq.nums[0]).add(eq.nums[1])
+    if (eq.op === '-') set.add(eq.nums[1])
+  }
+  return set
+})
+
 const wrongCells = computed(() => new Set(props.wrongEquations.flatMap((i) => props.puzzle.equations[i].cells)))
 const hintCells = computed(() => new Set(props.hintEquation === null ? [] : props.puzzle.equations[props.hintEquation].cells))
 
@@ -79,10 +92,10 @@ const cells = computed(() =>
         @click="emit('tapCell', c.key)"
         @pointerdown="c.tile !== null && !c.classes.locked && emit('dragStart', $event, c.tile)"
       >
-        <FractionView v-if="c.tile !== null" :value="puzzle.tiles[c.tile]" />
+        <FractionView v-if="c.tile !== null" :value="puzzle.tiles[c.tile]" :paren="parenCells.has(c.key)" />
       </button>
       <div v-else class="cell" :class="c.classes" :style="c.style">
-        <FractionView v-if="c.cell.kind === 'given'" :value="c.cell.value" />
+        <FractionView v-if="c.cell.kind === 'given'" :value="c.cell.value" :paren="parenCells.has(c.key)" />
         <span v-else-if="c.cell.kind === 'op'" class="symbol" :class="{ word: c.cell.op === 'af' }">{{
           OP_SYMBOL[c.cell.op]
         }}</span>

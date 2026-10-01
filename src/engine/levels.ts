@@ -35,7 +35,7 @@ export const TOPICS: Topic[] = [
     description: 'Regn med decimaltal, og find procent af et tal.',
     available: true,
   },
-  { id: 'algebra', title: 'Algebra', description: 'Reduktion af udtryk.', available: false },
+  { id: 'algebra', title: 'Algebra', description: 'Reducer udtryk med x – fra at samle led til kvadratsætninger.', available: true },
 ]
 
 export interface LevelInfo {
@@ -49,8 +49,8 @@ export interface LevelInfo {
   example: string
   available: boolean
   reduce: ReduceRule
-  /** Hvordan tallene skrives: brøk, blandet tal eller decimaltal. */
-  form: 'frac' | 'mixed' | 'dec'
+  /** Hvordan tallene skrives: brøk, blandet tal, decimaltal eller algebraiske udtryk. */
+  form: 'frac' | 'mixed' | 'dec' | 'expr'
   feedback: FeedbackMode
   /** Kan alle baner løses skridt for skridt (én ligning med ét ukendt tal ad gangen)? */
   stepwise: boolean
@@ -158,6 +158,58 @@ export const LEVELS: LevelInfo[] = [
     available: true,
     reduce: 'required',
     form: 'dec',
+    feedback: 'equations',
+    stepwise: true,
+  },
+  {
+    code: 'A1',
+    topic: 'algebra',
+    number: 1,
+    title: 'Saml led',
+    description: 'Læg ensartede led sammen og træk dem fra hinanden.',
+    example: '2x + 3x',
+    available: true,
+    reduce: 'required',
+    form: 'expr',
+    feedback: 'explain',
+    stepwise: true,
+  },
+  {
+    code: 'A2',
+    topic: 'algebra',
+    number: 2,
+    title: 'Gange og dividere led',
+    description: 'Gang og divider led med x og x².',
+    example: '2x · 3x',
+    available: true,
+    reduce: 'required',
+    form: 'expr',
+    feedback: 'explain',
+    stepwise: true,
+  },
+  {
+    code: 'A3',
+    topic: 'algebra',
+    number: 3,
+    title: 'Parenteser',
+    description: 'Gang ind i en parentes, minusparenteser – og sæt uden for parentes.',
+    example: '3 · (x + 2)',
+    available: true,
+    reduce: 'required',
+    form: 'expr',
+    feedback: 'equations',
+    stepwise: true,
+  },
+  {
+    code: 'A4',
+    topic: 'algebra',
+    number: 4,
+    title: 'Kvadratsætninger',
+    description: 'Gang to parenteser sammen – brug kvadratsætningerne.',
+    example: '(x + 3) · (x + 3)',
+    available: true,
+    reduce: 'required',
+    form: 'expr',
     feedback: 'equations',
     stepwise: true,
   },
