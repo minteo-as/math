@@ -1,60 +1,74 @@
 name: Release
 
-# En release kan laves på to måder – begge ender med en GitHub Release med dist som zip:
+# Releases laves KUN på GitHub:
+#   Releases → "Draft a new release" → nyt tag, fx v0.2.0, target: main → "Publish release".
 #
-#  1. På GitHub: Releases → "Draft a new release" → vælg et nyt tag, fx v0.3.0 → Publish.
-#     Workflowen bygger og lægger zip-filen på den release, du lige har lavet.
+# Workflowen
+#   1. tjekker, at versionen følger lige efter seneste release (0.1.0 -> 0.1.1, 0.2.0 eller 1.0.0),
+#      og at tagget peger på en commit på main,
+#   2. kører de samme tjek som CI og bygger med tagget som version,
+#   3. lægger broekkryds-vX.Y.Z.zip på releasen,
+#   4. committer den nye version i package.json til main.
 #
-#  2. Fra kommandolinjen:
-#       npm version minor && git push --follow-tags
-#     Workflowen bygger og opretter selv releasen.
-#
-# Versionen på siden tages fra tagget. Tagget skal have formen vX.Y.Z.
+# Fejler noget før trin 3, sættes releasen tilbage til kladde (draft), så der aldrig
+# ligger en udgivet release uden zip-fil. Ret fejlen, og udgiv kladden igen.
 on:
-  push:
-    tags: ['v*.*.*']
   release:
     types: [published]
 
 permissions:
   contents: write
 
-# Laves releasen på GitHub, kan både "release" og tag-"push" udløse en kørsel.
-# De køres én ad gangen for samme tag, og den sidste overskriver bare zip-filen.
+# Én release ad gangen, så to releases ikke tjekkes op mod den samme forrige version.
 concurrency:
-  group: release-${{ github.ref_name }}
+  group: release
   cancel-in-progress: false
 
 jobs:
   release:
-    name: Byg og udgiv
+    name: Tjek, byg og udgiv
     runs-on: ubuntu-latest
     env:
-      TAG: ${{ github.ref_name }}
+      TAG: ${{ github.event.release.tag_name }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Tagget skal have formen vX.Y.Z
-        run: |
-          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Tagget '$TAG' skal have formen vX.Y.Z, fx v0.3.0."
-            exit 1
-          fi
-
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - name: Advar, hvis package.json har en anden version
-        run: |
-          VERSION="$(node -p "require('./package.json').version")"
-          if [ "$TAG" != "v$VERSION" ]; then
-            echo "::warning::package.json siger $VERSION, men tagget er $TAG. Siden viser $TAG. Husk at rette package.json ved lejlighed."
-          fi
-
       - name: Installer
         run: npm ci
+
+      - name: Tjek versionen
+        run: |
+          fail() { echo "::error::$1"; echo "### Releasen blev afvist"$'\n\n'"$1" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
+
+          if [ "${{ github.event.release.prerelease }}" = "true" ]; then
+            fail "Pre-releases bruges ikke. Fjern fluebenet ved 'Set as a pre-release'."
+          fi
+
+          git fetch --quiet origin "$DEFAULT_BRANCH"
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/$DEFAULT_BRANCH"; then
+            fail "Tagget $TAG peger ikke på en commit på $DEFAULT_BRANCH. Vælg '$DEFAULT_BRANCH' som target."
+          fi
+
+          # Forrige version = højeste udgivne release (ikke kladder), ellers package.json på main.
+          TAGS="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1000 --json tagName --jq '.[].tagName' | grep -vxF "$TAG" || true)"
+          PREVIOUS="$(npx tsx scripts/release-version.ts highest $TAGS)"
+          if [ -z "$PREVIOUS" ]; then
+            PREVIOUS="$(git show "origin/$DEFAULT_BRANCH:package.json" | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync(0, 'utf8')).version)")"
+          fi
+
+          if ! MESSAGE="$(npx tsx scripts/release-version.ts check "$TAG" "$PREVIOUS" 2>&1)"; then
+            fail "$MESSAGE"
+          fi
+          echo "$MESSAGE"
 
       - name: Typetjek
         run: npm run typecheck
@@ -73,22 +87,37 @@ jobs:
       - name: Byg
         run: npm run build
         env:
-          RELEASE_VERSION: ${{ github.ref_name }}
+          RELEASE_VERSION: ${{ github.event.release.tag_name }}
 
       - name: Pak dist som zip
         run: |
           cd dist
           zip -r "../broekkryds-$TAG.zip" .
 
-      - name: Læg zip-filen på releasen (opret den, hvis den ikke findes)
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Læg zip-filen på releasen
+        id: upload
+        run: gh release upload "$TAG" "broekkryds-$TAG.zip" --clobber
+
+      - name: Sæt releasen tilbage til kladde
+        if: failure() && steps.upload.outcome != 'success'
+        run: gh release edit "$TAG" --draft=true
+
+      - name: Opdater package.json på main
         run: |
-          if gh release view "$TAG" > /dev/null 2>&1; then
-            gh release upload "$TAG" "broekkryds-$TAG.zip" --clobber
-          else
-            gh release create "$TAG" "broekkryds-$TAG.zip" \
-              --title "Brøkkryds $TAG" \
-              --generate-notes \
-              --verify-tag
+          VERSION="${TAG#v}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "package.json har allerede version $VERSION."
+            exit 0
           fi
+          git commit -m "Version $VERSION [skip ci]"
+          for attempt in 1 2 3; do
+            git push origin "HEAD:$DEFAULT_BRANCH" && exit 0
+            git pull --rebase origin "$DEFAULT_BRANCH"
+          done
+          echo "::error::Kunne ikke pushe den nye version til $DEFAULT_BRANCH. Releasen er udgivet; ret package.json til $VERSION manuelt."
+          exit 1

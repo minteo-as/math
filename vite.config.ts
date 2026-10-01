@@ -38,6 +38,6 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(appVersion()),
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'],
   },
 })

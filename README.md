@@ -25,31 +25,35 @@ Zip-filen indeholder `index.html` og `assets/` direkte i roden og kan pakkes ud 
 
 ## Versioner og releases
 
-Versionsnummeret vises nederst på alle sider.
+`package.json` indeholder altid **seneste udgivne version**. Workflowen retter den selv efter hver release, så den skal ikke rettes i hånden.
 
-- En **release** viser sit tag, fx `Version 0.3.0`.
+Versionsnummeret vises nederst på alle sider:
+
+- En **release** viser sit tag, fx `Version 0.2.0`.
 - **Andre builds** (lokalt og i CI) viser seneste versions-tag plus commit-id, fx `Version 0.2.0+c344353`. Så kan man se, hvad der faktisk ligger på serveren.
-- Findes der endnu ingen tags, bruges versionen i `package.json`.
 
-En release kan laves på to måder:
+Releases laves **kun på GitHub**:
 
-1. **På GitHub:** *Releases → Draft a new release*. Vælg et nyt tag, fx `v0.3.0`, skriv eventuelt noter (eller tryk *Generate release notes*), og tryk *Publish release*.
-2. **Fra kommandolinjen:**
-   ```bash
-   npm version minor        # retter package.json og laver tagget, fx v0.3.0
-   git push --follow-tags
-   ```
+1. *Releases → Draft a new release*.
+2. Skriv et nyt tag, fx `v0.2.0`, og vælg `main` som *target*.
+3. Tryk evt. *Generate release notes* og derefter *Publish release*.
 
-Begge starter `.github/workflows/release.yml`. Den:
+Det starter `.github/workflows/release.yml`. Først tjekker den:
 
-- tjekker, at tagget har formen `vX.Y.Z`,
-- kører de samme tjek som CI,
-- bygger med tagget som version,
-- lægger `broekkryds-vX.Y.Z.zip` på releasen (vej 2 opretter selv releasen).
+- at versionen følger lige efter seneste udgivne release (eller `package.json`, hvis der ikke er nogen endnu). Fra `0.1.0` er kun `v0.1.1`, `v0.2.0` og `v1.0.0` tilladt,
+- at tagget peger på en commit på `main`, og at det ikke er en pre-release.
+
+Derefter:
+
+- kører den de samme tjek som CI og bygger med tagget som version,
+- lægger den `broekkryds-vX.Y.Z.zip` på releasen,
+- committer den den nye version i `package.json` til `main`.
+
+Fejler noget, før zip-filen er lagt op, sættes releasen tilbage til **kladde** (draft), og fejlen står i workflow-kørslen. Ret fejlen, og udgiv kladden igen (eventuelt med et andet tag).
 
 Zip-filen pakkes ud direkte på webserveren.
 
-Laves releasen på GitHub, bliver `package.json` ikke rettet automatisk. Workflowen giver en advarsel, men fejler ikke. Ret den ved lejlighed.
+Tags, der pushes fra kommandolinjen, laver ikke en release.
 
 Tommelfingerregel for versionsnumre:
 
