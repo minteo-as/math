@@ -65,7 +65,8 @@ export function toNumber(f: Frac): number {
   return f.n / f.d
 }
 
-export type Op = '+' | '-' | '*' | ':'
+/** 'af' er "procent af": 25 % af 80 = 20. Regnemæssigt er det gange (0,25 · 80). */
+export type Op = '+' | '-' | '*' | ':' | 'af'
 
 export function apply(op: Op, a: Frac, b: Frac): Frac {
   switch (op) {
@@ -74,6 +75,7 @@ export function apply(op: Op, a: Frac, b: Frac): Frac {
     case '-':
       return sub(a, b)
     case '*':
+    case 'af':
       return mul(a, b)
     case ':':
       return div(a, b)
@@ -86,14 +88,17 @@ export const OP_SYMBOL: Record<Op, string> = {
   '-': '−',
   '*': '·',
   ':': ':',
+  af: 'af',
 }
 
 /**
  * Skriveform for et tal på en brik eller i et felt.
  *  - 'frac':  uægte brøk, fx 7/4
  *  - 'mixed': blandet tal, fx 1 3/4 (kun relevant når |værdi| > 1)
+ *  - 'dec':   decimaltal, fx 0,25 (kun for brøker, der giver et endeligt decimaltal)
+ *  - 'pct':   procent, fx 25 %
  */
-export type Form = 'frac' | 'mixed'
+export type Form = 'frac' | 'mixed' | 'dec' | 'pct'
 
 /** Et tal præcis som det står skrevet – værdi plus skriveform. */
 export interface NumToken {
@@ -104,33 +109,67 @@ export interface NumToken {
 
 export function token(f: Frac, form: Form = 'frac'): NumToken {
   const t = frac(f.n, f.d)
+  if (form === 'dec' || form === 'pct') {
+    const r = reduce(t)
+    return { n: r.n, d: r.d, form }
+  }
   // Et blandet tal giver kun mening, når der både er en hel del og en brøkdel.
   const mixedPossible = Math.abs(t.n) > t.d && !isInteger(t)
   return { n: t.n, d: t.d, form: form === 'mixed' && mixedPossible ? 'mixed' : 'frac' }
 }
 
-/** Opdeling til visning: fortegn, hel del og brøkdel. */
+/** Antal decimaler i det endelige decimaltal – eller null, hvis det ikke ender (fx 1/3). */
+export function decimals(f: Frac): number | null {
+  const r = reduce(f)
+  for (let k = 0, scale = 1; k <= 8; k++, scale *= 10) {
+    if ((r.n * scale) % r.d === 0) return k
+  }
+  return null
+}
+
+/** Decimaltal med dansk komma og uden fortegn, fx 0,25. */
+function decimalDigits(f: Frac): string {
+  const k = decimals(f)
+  if (k === null) throw new Error(`${f.n}/${f.d} giver ikke et endeligt decimaltal`)
+  const digits = String(Math.round(Math.abs((f.n * 10 ** k) / f.d))).padStart(k + 1, '0')
+  return k === 0 ? digits : `${digits.slice(0, -k)},${digits.slice(-k)}`
+}
+
+/** Decimaltal-tekst med fortegn, fx "−0,25". */
+export function decimalText(f: Frac): string {
+  return (f.n < 0 ? '−' : '') + decimalDigits(f)
+}
+
+/** Smalt, ikke-brydende mellemrum før %, som dansk typografi foreskriver. */
+export const PERCENT_SIGN = '\u202F%'
+
+/** Opdeling til visning: fortegn og enten tekst (decimal/procent) eller hel del og brøkdel. */
 export interface TokenParts {
   negative: boolean
   whole: number | null
   num: number | null
   den: number | null
+  text: string | null
 }
 
 export function parts(t: NumToken): TokenParts {
   const negative = t.n < 0
   const n = Math.abs(t.n)
-  if (n % t.d === 0 && t.d === 1) return { negative, whole: n, num: null, den: null }
+  const none = { whole: null, num: null, den: null, text: null }
+  if (t.form === 'dec') return { ...none, negative, text: decimalDigits(t) }
+  if (t.form === 'pct') return { ...none, negative, text: decimalDigits(frac(t.n * 100, t.d)) + PERCENT_SIGN }
+  if (n % t.d === 0 && t.d === 1) return { ...none, negative, whole: n }
   if (t.form === 'mixed' && n > t.d) {
-    return { negative, whole: Math.floor(n / t.d), num: n % t.d, den: t.d }
+    return { ...none, negative, whole: Math.floor(n / t.d), num: n % t.d, den: t.d }
   }
-  return { negative, whole: null, num: n, den: t.d }
+  return { ...none, negative, num: n, den: t.d }
 }
 
 /** Tekstform, fx "−1 3/4", "5/6" eller "3". Bruges i hints og som nøgle. */
 export function tokenText(t: NumToken): string {
   const p = parts(t)
   const sign = p.negative ? '−' : ''
+  if (p.text !== null) return `${sign}${p.text}`
   if (p.num === null) return `${sign}${p.whole}`
   if (p.whole === null) return `${sign}${p.num}/${p.den}`
   return `${sign}${p.whole} ${p.num}/${p.den}`

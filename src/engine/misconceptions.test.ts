@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { frac, apply, tokenText, type Frac, type Op } from './fraction'
-import { trapCandidates, type TrapOptions } from './misconceptions'
+import { percentTrapCandidates, trapCandidates, type TrapOptions } from './misconceptions'
 
 const plain: TrapOptions = { form: 'frac', negatives: false, reductionTraps: false, improperTraps: false }
 
@@ -36,5 +36,26 @@ describe('typiske fejl', () => {
     expect(t['not-reduced']).toBe('−2/12')
     const m = traps('+', frac(3, 4), frac(1, 2), { ...plain, form: 'mixed', improperTraps: true })
     expect(m['improper']).toBe('5/4')
+  })
+})
+
+describe('typiske fejl med decimaltal og procent', () => {
+  const dec: TrapOptions = { ...plain, form: 'dec' }
+
+  it('komma under komma', () => {
+    expect(traps('+', frac(7, 10), frac(1, 4), dec)['dec-align']).toBe('0,32')
+  })
+
+  it('kommaet forkert ved gange', () => {
+    const found = trapCandidates('*', frac(1, 2), frac(2, 5), frac(1, 5), dec).map((t) => tokenText(t.value))
+    expect(found).toEqual(expect.arrayContaining(['2', '0,02']))
+  })
+
+  it('procent af', () => {
+    const texts = (u: 0 | 1 | 2) =>
+      Object.fromEntries(percentTrapCandidates(u, frac(1, 4), frac(80), frac(20)).map((t) => [t.kind, tokenText(t.value)]))
+    expect(texts(2)).toEqual({ 'pct-add': '105', 'pct-divide': '3,2' })
+    expect(texts(0)).toEqual({ 'pct-no-100': '0,25\u202F%', 'pct-flip': '400\u202F%' })
+    expect(texts(1)).toEqual({ 'pct-mul-instead': '5' })
   })
 })

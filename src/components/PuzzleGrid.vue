@@ -21,6 +21,23 @@ const emit = defineEmits<{
   dragStart: [event: PointerEvent, tile: number]
 }>()
 
+/**
+ * Tal står altid i lige rækker/kolonner, regnetegn og = i ulige.
+ * Derfor kan de ulige kolonner og rækker være smallere, så tallene får mere plads.
+ */
+const OP_RATIO = 0.62
+const track = (n: number) =>
+  Array.from({ length: n }, (_, i) => (i % 2 === 0 ? 'var(--unit)' : `calc(var(--unit) * ${OP_RATIO})`)).join(' ')
+const gridStyle = computed(() => {
+  const { cols, rows } = props.puzzle
+  const units = Math.ceil(cols / 2) + OP_RATIO * Math.floor(cols / 2)
+  return {
+    '--unit': `min(64px, calc((min(100vw, var(--page-max)) - 32px) / ${units}))`,
+    gridTemplateColumns: track(cols),
+    gridTemplateRows: track(rows),
+  }
+})
+
 const wrongCells = computed(() => new Set(props.wrongEquations.flatMap((i) => props.puzzle.equations[i].cells)))
 const hintCells = computed(() => new Set(props.hintEquation === null ? [] : props.puzzle.equations[props.hintEquation].cells))
 
@@ -49,7 +66,7 @@ const cells = computed(() =>
 </script>
 
 <template>
-  <div class="grid" :style="{ '--cols': puzzle.cols, '--rows': puzzle.rows }">
+  <div class="grid" :style="gridStyle">
     <template v-for="c in cells" :key="c.key">
       <button
         v-if="c.cell.kind === 'blank'"
@@ -66,7 +83,9 @@ const cells = computed(() =>
       </button>
       <div v-else class="cell" :class="c.classes" :style="c.style">
         <FractionView v-if="c.cell.kind === 'given'" :value="c.cell.value" />
-        <span v-else-if="c.cell.kind === 'op'" class="symbol">{{ OP_SYMBOL[c.cell.op] }}</span>
+        <span v-else-if="c.cell.kind === 'op'" class="symbol" :class="{ word: c.cell.op === 'af' }">{{
+          OP_SYMBOL[c.cell.op]
+        }}</span>
         <span v-else class="symbol">=</span>
         <span v-if="c.cell.kind === 'eq' && c.classes.wrong" class="badge badge-wrong" aria-label="Forkert">✗</span>
         <span v-else-if="c.cell.kind === 'eq' && solved" class="badge badge-ok" aria-label="Rigtigt">✓</span>
@@ -78,10 +97,8 @@ const cells = computed(() =>
 <style scoped>
 .grid {
   display: grid;
-  grid-template-columns: repeat(var(--cols), var(--cell));
-  grid-template-rows: repeat(var(--rows), var(--cell));
   justify-content: center;
-  font-size: calc(var(--cell) * 0.34);
+  font-size: calc(var(--unit) * 0.34);
 }
 .cell {
   display: flex;
@@ -98,6 +115,9 @@ const cells = computed(() =>
 .symbol {
   font-size: 1.5em;
   font-weight: 700;
+}
+.symbol.word {
+  font-size: 0.95em;
 }
 .cell-given {
   background: var(--given-bg);

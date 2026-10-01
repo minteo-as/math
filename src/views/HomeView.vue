@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import { LEVELS } from '../engine/levels'
+import { levelsForTopic, TOPICS } from '../engine/levels'
 import { progress } from '../progress'
 import { puzzlesForLevel } from '../puzzles'
 
-function levelStars(level: number) {
+function levelStars(level: string) {
   const puzzles = puzzlesForLevel(level)
   const earned = puzzles.reduce((sum, p) => sum + (progress.stars[p.id] ?? 0), 0)
   return { earned, max: puzzles.length * 3 }
@@ -18,25 +18,29 @@ function levelStars(level: number) {
       <p>Læg brikkerne, så alle regnestykker går op – både vandret og lodret.</p>
     </header>
 
-    <ol class="levels">
-      <li v-for="l in LEVELS" :key="l.level">
-        <RouterLink v-if="l.available" class="level" :to="{ name: 'level', params: { level: l.level } }">
-          <span class="badge">{{ l.level }}</span>
-          <span class="text">
-            <strong>{{ l.title }}</strong>
-            <span>{{ l.description }}</span>
-          </span>
-          <span class="score">★ {{ levelStars(l.level).earned }}/{{ levelStars(l.level).max }}</span>
-        </RouterLink>
-        <div v-else class="level disabled" aria-disabled="true">
-          <span class="badge">{{ l.level }}</span>
-          <span class="text">
-            <strong>{{ l.title }}</strong>
-            <span>Kommer snart</span>
-          </span>
-        </div>
-      </li>
-    </ol>
+    <section v-for="t in TOPICS" :key="t.id" class="topic">
+      <h2>{{ t.title }}</h2>
+      <p class="topic-desc">{{ t.available ? t.description : 'Kommer snart.' }}</p>
+      <ol v-if="t.available" class="levels">
+        <li v-for="l in levelsForTopic(t.id)" :key="l.code">
+          <RouterLink v-if="l.available" class="level" :to="{ name: 'level', params: { level: l.code } }">
+            <span class="badge">{{ l.number }}</span>
+            <span class="text">
+              <strong>{{ l.title }}</strong>
+              <span>{{ l.description }}</span>
+            </span>
+            <span class="score">★ {{ levelStars(l.code).earned }}/{{ levelStars(l.code).max }}</span>
+          </RouterLink>
+          <div v-else class="level disabled" aria-disabled="true">
+            <span class="badge">{{ l.number }}</span>
+            <span class="text">
+              <strong>{{ l.title }}</strong>
+              <span>Kommer snart</span>
+            </span>
+          </div>
+        </li>
+      </ol>
+    </section>
 
     <details class="howto">
       <summary>Sådan spiller du</summary>
@@ -59,6 +63,18 @@ function levelStars(level: number) {
 .hero p {
   margin: 0 0 20px;
   color: var(--muted);
+}
+.topic + .topic {
+  margin-top: 28px;
+}
+.topic h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.topic-desc {
+  margin: 2px 0 12px;
+  color: var(--muted);
+  font-size: 15px;
 }
 .levels {
   list-style: none;

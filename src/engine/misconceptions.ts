@@ -1,5 +1,7 @@
 import {
   add,
+  decimals,
+  div,
   equals,
   frac,
   gcd,
@@ -37,6 +39,16 @@ export const MISCONCEPTION_TEXT: Record<MisconceptionKind, string> = {
   sign: 'Tjek fortegnet.',
   'not-reduced': 'Rigtig værdi – men brøken kan forkortes.',
   improper: 'Rigtig værdi – men tallet skal skrives som et blandet tal.',
+  'as-percent': 'Rigtig værdi – men her skal tallet skrives i procent.',
+  'as-decimal': 'Rigtig værdi – men her skal tallet skrives som decimaltal.',
+  'dec-align':
+    'Det ligner, at tallene ikke står med komma under komma. Tiendedele skal regnes sammen med tiendedele og hundrededele med hundrededele.',
+  'dec-comma': 'Cifrene er rigtige, men kommaet står forkert. Tjek, hvor mange decimaler svaret skal have.',
+  'pct-add': 'Du har lagt procenttallet til. "25 % af 80" betyder 0,25 · 80.',
+  'pct-divide': 'Du har divideret med procenttallet. "25 % af 80" betyder 0,25 · 80.',
+  'pct-no-100': 'Delen divideret med det hele giver et decimaltal. Det skal ganges med 100 for at blive til procent.',
+  'pct-flip': 'Du har divideret det hele med delen. Procenten er delen divideret med det hele.',
+  'pct-mul-instead': 'For at finde det hele skal du dividere med procenten (fx 20 : 0,25) – ikke gange.',
 }
 
 export interface TrapCandidate {
@@ -62,6 +74,7 @@ function splitMixed(f: Frac): [number, Frac] {
  * Returnerer kun kandidater, der adskiller sig fra det rigtige svar.
  */
 export function trapCandidates(op: Op, a: Frac, b: Frac, c: Frac, opts: TrapOptions): TrapCandidate[] {
+  if (opts.form === 'dec') return decimalTrapCandidates(op, a, b, c)
   const out: TrapCandidate[] = []
   const push = (f: Frac, kind: MisconceptionKind, form: Form = opts.form, keepUnreduced = false) => {
     if (f.d === 0) return
@@ -139,4 +152,66 @@ export function trapCandidates(op: Op, a: Frac, b: Frac, c: Frac, opts: TrapOpti
     seen.add(key)
     return true
   })
+}
+
+/** Tallet uden komma og antal decimaler, fx 0,25 -> [25, 2]. */
+function digitsOf(f: Frac): [number, number] {
+  const k = decimals(f) ?? 0
+  return [Math.round((f.n * 10 ** k) / f.d), k]
+}
+
+/** Typiske fejl med decimaltal i a ∘ b = c. */
+export function decimalTrapCandidates(op: Op, a: Frac, b: Frac, c: Frac): TrapCandidate[] {
+  const out: TrapCandidate[] = []
+  const push = (f: Frac, kind: MisconceptionKind) => {
+    const value = reduce(f)
+    if (value.n <= 0 || equals(value, c) || decimals(value) === null) return
+    if (out.some((o) => equals(frac(o.value.n, o.value.d), value))) return
+    out.push({ value: token(value, 'dec'), kind })
+  }
+  const [A, ka] = digitsOf(a)
+  const [B, kb] = digitsOf(b)
+  switch (op) {
+    case '+':
+    case '-': {
+      // 0,7 + 0,25 = 0,32: cifrene er stillet op fra højre i stedet for komma under komma.
+      if (ka !== kb) {
+        const k = Math.max(ka, kb)
+        push(frac(op === '+' ? A + B : A - B, 10 ** k), 'dec-align')
+      }
+      push(op === '+' ? sub(a, b) : add(a, b), 'wrong-op')
+      break
+    }
+    case '*':
+    case ':':
+      push(mul(c, frac(10)), 'dec-comma')
+      push(div(c, frac(10)), 'dec-comma')
+      break
+  }
+  return out
+}
+
+/**
+ * Typiske fejl i "p % af det hele = delen".
+ * `unknown` er det tal, eleven skal finde: 0 = procenten, 1 = det hele, 2 = delen.
+ */
+export function percentTrapCandidates(unknown: 0 | 1 | 2, p: Frac, whole: Frac, part: Frac): TrapCandidate[] {
+  const out: TrapCandidate[] = []
+  const correct = [p, whole, part][unknown]
+  const push = (f: Frac, kind: MisconceptionKind, form: Form) => {
+    const value = reduce(f)
+    if (value.n <= 0 || equals(value, correct) || decimals(value) === null) return
+    out.push({ value: token(value, form), kind })
+  }
+  const pctNumber = mul(p, frac(100)) // 25 % -> 25
+  if (unknown === 2) {
+    push(add(whole, pctNumber), 'pct-add', 'dec') // 80 + 25
+    push(div(whole, pctNumber), 'pct-divide', 'dec') // 80 : 25
+  } else if (unknown === 0) {
+    push(div(div(part, whole), frac(100)), 'pct-no-100', 'pct') // 0,25 %
+    push(div(whole, part), 'pct-flip', 'pct') // 400 %
+  } else {
+    push(mul(part, p), 'pct-mul-instead', 'dec') // 20 · 0,25
+  }
+  return out
 }

@@ -9,7 +9,7 @@ export function puzzleById(id: string): Puzzle | undefined {
   return PUZZLES.find((p) => p.id === id)
 }
 
-export function puzzlesForLevel(level: number): Puzzle[] {
+export function puzzlesForLevel(level: string): Puzzle[] {
   return PUZZLES.filter((p) => p.level === level)
 }
 

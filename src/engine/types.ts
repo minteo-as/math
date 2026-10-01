@@ -1,4 +1,4 @@
-import type { NumToken, Op } from './fraction'
+import type { Form, NumToken, Op } from './fraction'
 
 /** Nøgle for et felt i gitteret: "række,kolonne". */
 export type CellKey = string
@@ -9,7 +9,8 @@ export function cellKey(r: number, c: number): CellKey {
 
 export type PuzzleCell =
   | { r: number; c: number; kind: 'given'; value: NumToken }
-  | { r: number; c: number; kind: 'blank' }
+  /** `form`: den skriveform, brikken i feltet skal have (kun på decimal- og procentniveauer). */
+  | { r: number; c: number; kind: 'blank'; form?: Form }
   | { r: number; c: number; kind: 'op'; op: Op }
   | { r: number; c: number; kind: 'eq' }
 
@@ -35,6 +36,15 @@ export type MisconceptionKind =
   | 'sign'
   | 'not-reduced'
   | 'improper'
+  | 'as-percent'
+  | 'as-decimal'
+  | 'dec-align'
+  | 'dec-comma'
+  | 'pct-add'
+  | 'pct-divide'
+  | 'pct-no-100'
+  | 'pct-flip'
+  | 'pct-mul-instead'
 
 /** En fælde-brik: svaret man får ved en typisk fejl i en bestemt ligning. */
 export interface Trap {
@@ -46,9 +56,10 @@ export interface Trap {
 }
 
 export interface Puzzle {
-  /** Fx "3-07" = niveau 3, bane 7. */
+  /** Fx "3-07" = niveau 3, bane 7, eller "P2-07". */
   id: string
-  level: number
+  /** Niveau-kode, se LevelInfo.code. */
+  level: string
   index: number
   rows: number
   cols: number

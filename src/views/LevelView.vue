@@ -2,12 +2,13 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import StarRow from '../components/StarRow.vue'
-import { LEVELS } from '../engine/levels'
+import { LEVELS, topicInfo } from '../engine/levels'
 import { progress } from '../progress'
 import { puzzlesForLevel } from '../puzzles'
 
-const props = defineProps<{ level: number }>()
-const info = computed(() => LEVELS.find((l) => l.level === props.level))
+const props = defineProps<{ level: string }>()
+const info = computed(() => LEVELS.find((l) => l.code === props.level))
+const topic = computed(() => (info.value ? topicInfo(info.value.topic) : null))
 const puzzles = computed(() => puzzlesForLevel(props.level))
 </script>
 
@@ -16,7 +17,7 @@ const puzzles = computed(() => puzzlesForLevel(props.level))
     <header class="topbar">
       <RouterLink class="icon-btn" to="/" aria-label="Til forsiden">←</RouterLink>
       <div class="title">
-        <strong>Niveau {{ level }}</strong>
+        <strong v-if="info">{{ topic?.title }} · Niveau {{ info.number }}</strong>
         <span v-if="info">{{ info.title }}</span>
       </div>
       <span class="icon-btn spacer" aria-hidden="true"></span>
