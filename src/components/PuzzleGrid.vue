@@ -29,11 +29,18 @@ const emit = defineEmits<{
 const OP_RATIO = 0.62
 const track = (n: number) =>
   Array.from({ length: n }, (_, i) => (i % 2 === 0 ? 'var(--unit)' : `calc(var(--unit) * ${OP_RATIO})`)).join(' ')
+/** Mindste feltstørrelse, når brættet skrumpes for at passe i højden – så tal kan læses og rammes. */
+const MIN_UNIT = 40
 const gridStyle = computed(() => {
   const { cols, rows } = props.puzzle
   const units = Math.ceil(cols / 2) + OP_RATIO * Math.floor(cols / 2)
+  const rowUnits = Math.ceil(rows / 2) + OP_RATIO * Math.floor(rows / 2)
+  // Så stort som bredden tillader – men mindre, hvis brættet ellers ikke kan være der i højden
+  // (100cqh er højden af brættets ramme, se GameView). Aldrig under MIN_UNIT; så scroller brættet.
+  const byWidth = `calc((min(100vw, var(--page-max)) - 32px) / ${units})`
+  const byHeight = `calc((100cqh - 4px) / ${rowUnits.toFixed(2)})`
   return {
-    '--unit': `min(64px, calc((min(100vw, var(--page-max)) - 32px) / ${units}))`,
+    '--unit': `min(64px, ${byWidth}, max(${MIN_UNIT}px, ${byHeight}))`,
     gridTemplateColumns: track(cols),
     gridTemplateRows: track(rows),
   }

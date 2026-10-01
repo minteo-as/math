@@ -326,9 +326,13 @@ function goNext() {
   gap: 10px;
   --tile: 58px;
 }
-/* Mange brikker: lidt mindre brikker, så bunden ikke tager pladsen fra brættet. */
+/* Mange brikker: mindre brikker og tættere bunke, så bunden ikke tager pladsen fra brættet. */
 .game.many-tiles {
-  --tile: 48px;
+  --tile: 44px;
+}
+.many-tiles .dock .dock-bank {
+  gap: 6px;
+  padding: 10px 6px;
 }
 .topbar {
   display: flex;
@@ -356,6 +360,8 @@ function goNext() {
 .board-wrap {
   flex: 1 1 0;
   min-height: 0;
+  /* Brættet kan måle rammens højde (100cqh) og skrumpe, så det passer. */
+  container-type: size;
   margin: 0 -16px;
   padding: 12px 16px;
   overflow-y: auto;
