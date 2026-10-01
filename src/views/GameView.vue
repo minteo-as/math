@@ -37,14 +37,19 @@ const ruleText = computed(() => {
 const boardWrap = ref<HTMLElement | null>(null)
 const bottom = ref<HTMLElement | null>(null)
 
+/** Blød scroll – men ikke for dem, der har bedt om færre animationer. */
+function scrollBehavior(): ScrollBehavior {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+}
+
 /** Vis et felt på brættet, hvis det er scrollet ud af syne. */
 function reveal(selector: string, block: ScrollLogicalPosition) {
-  nextTick(() => boardWrap.value?.querySelector(selector)?.scrollIntoView({ block, inline: 'nearest', behavior: 'smooth' }))
+  nextTick(() => boardWrap.value?.querySelector(selector)?.scrollIntoView({ block, inline: 'nearest', behavior: scrollBehavior() }))
 }
 
 /** Ny besked eller nyt hint øverst i bunden: rul bunden op, så teksten kan ses. */
 function showMessages() {
-  nextTick(() => bottom.value?.scrollTo({ top: 0, behavior: 'smooth' }))
+  nextTick(() => bottom.value?.scrollTo({ top: 0, behavior: scrollBehavior() }))
 }
 
 if (game) {
@@ -58,7 +63,7 @@ if (game) {
 /** Når hjælpen foldes ud, skal knapperne kunne ses. */
 function hintsToggled(event: Event) {
   if (!(event.target as HTMLDetailsElement).open) return
-  nextTick(() => bottom.value?.scrollTo({ top: bottom.value.scrollHeight, behavior: 'smooth' }))
+  nextTick(() => bottom.value?.scrollTo({ top: bottom.value.scrollHeight, behavior: scrollBehavior() }))
 }
 
 // Under træk: hold brikken nær kanten af brættet for at scrolle.
