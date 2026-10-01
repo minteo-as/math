@@ -87,7 +87,7 @@ Tommelfingerregel for versionsnumre:
 - Brikkerne lægges ved at trække dem eller ved at trykke på en brik og derefter på et felt.
 - **Fælde-brikker** er de svar, man får ved typiske fejl (fx `1/2 + 1/3 = 2/5`). På de lave niveauer forklarer spillet fejlen.
 - **Tjek** virker, når alle felter er udfyldt. Hvad et tjek afslører, afhænger af niveauet:
-  - de lette niveauer (brøker 1–2, decimaltal 1–2): hvilke ligninger der er forkerte, plus en forklaring på fejlen
+  - de lette niveauer (hele tal 1–3, brøker 1–2, decimaltal 1–2, algebra 1–2): hvilke ligninger der er forkerte, plus en forklaring på fejlen
   - de øvrige niveauer: hvilke ligninger der er forkerte
   - (mulighed til svære niveauer senere: kun hvor mange ligninger der er forkerte)
   - Uanset niveau vises det, hvis en brik har den rigtige værdi, men står på den forkerte form.
@@ -101,6 +101,19 @@ Tommelfingerregel for versionsnumre:
   - niveau 4+: svaret skal være forkortet (og skrevet som blandet tal på niveau 4)
 
 Spillet er delt op i emner. Hvert emne har sine egne niveauer.
+
+**Hele tal** (bane-id'er `H1-01` osv.) – alle tal på brættet og på brikkerne er mellem −99 og 99 (aldrig 0, 1 eller −1). Banerne er større end i de andre emner (5–9 ligninger).
+
+| Niveau | Indhold | Typiske fejl som fælder |
+|---|---|---|
+| 1 | `+` og `−` – mindst to stykker med mente eller lån | `47 + 38 = 75` (glemt mente), `52 − 27 = 35` (mindste ciffer fra største) |
+| 2 | `·` og `:` – den lille tabel, division går op | nabotallet i tabellen: `7 · 8 = 48`, `56 : 8 = 6` |
+| 3 | Alle fire regnearter | som 1 og 2 |
+| 4 | Negative tal, alle fire regnearter | `4 − (−3) = 1`, `−3 + 5 = −8`, `−4 · 6 = 24`, `5 − 8 = 3` |
+| 5 | Store baner med ekstra tomme felter, som kun kan løses ved at se på brikkerne | som 4 |
+
+- Et negativt tal efter et regnetegn står i parentes på brættet, fx `5 − (−3)`.
+- Mellemregningen viser fx ener og tiere for sig, lån, gangetabellen og fortegnsreglerne – uden at give svaret.
 
 **Brøker**
 
@@ -152,7 +165,7 @@ src/engine/        Ren TypeScript – ingen Vue. Kan testes for sig.
   misconceptions.ts  Typiske fejl → fælde-brikker og forklaringer
   hints.ts         Hints og stjerneberegning
   generator.ts     Banegenerator (køres på forhånd via npm run generate)
-  templates.ts     Layout-skabeloner (højst 7 kolonner af hensyn til mobil)
+  templates.ts     Layout-skabeloner (højst 7 kolonner af hensyn til mobil – 9 til hele tal)
 src/data/puzzles.json  De færdiglavede baner (20 pr. niveau)
                        Brøkbanerne ændrer sig ikke, når der kommer nye emner til,
                        så elevernes gemte stjerner stadig passer til de samme baner.
@@ -163,7 +176,7 @@ src/components/, src/views/  Vue-komponenter
 Banerne laves af et script, og scriptet tjekker hver bane:
 
 - Der er præcis én løsning.
-- På niveau 1–4 kan banen løses ved hele tiden at finde en ligning, hvor der kun mangler ét tal.
+- Undtagen på brøker 5 og hele tal 5 kan banen løses ved hele tiden at finde en ligning, hvor der kun mangler ét tal.
 - Ingen fælde-brik giver også en rigtig løsning.
 
 Alt dette tjekkes igen i `src/engine/puzzles.test.ts`.

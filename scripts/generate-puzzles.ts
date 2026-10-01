@@ -18,11 +18,11 @@ const SEED = 2026
 /**
  * Hvert niveau får sit eget seed. Brøkniveauerne ("1"–"5") bruger deres nummer,
  * så deres baner ikke ændrer sig, når der kommer nye emner til.
- * Andre emner lægges fra 10 og op (P1 -> 11 osv.).
+ * Andre emner lægges fra 10 og op (P1 -> 11, A1 -> 21, H1 -> 31).
  */
 function seedIndex(code: string): number {
   const info = levelInfo(code)
-  const offset: Record<string, number> = { broek: 0, procent: 10, algebra: 20 }
+  const offset: Record<string, number> = { broek: 0, procent: 10, algebra: 20, hele: 30 }
   return offset[info.topic] + info.number
 }
 

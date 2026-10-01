@@ -18,7 +18,7 @@ export type ReduceRule = 'nudge' | 'required'
  */
 export type FeedbackMode = 'explain' | 'equations' | 'count'
 
-export type TopicId = 'broek' | 'procent' | 'algebra'
+export type TopicId = 'hele' | 'broek' | 'procent' | 'algebra'
 
 export interface Topic {
   id: TopicId
@@ -28,6 +28,12 @@ export interface Topic {
 }
 
 export const TOPICS: Topic[] = [
+  {
+    id: 'hele',
+    title: 'Hele tal',
+    description: 'Plus, minus, gange og division – fra hovedregning til negative tal. Alle tal er mellem −99 og 99.',
+    available: true,
+  },
   { id: 'broek', title: 'Brøker', description: 'De fire regnearter med brøker.', available: true },
   {
     id: 'procent',
@@ -57,6 +63,71 @@ export interface LevelInfo {
 }
 
 export const LEVELS: LevelInfo[] = [
+  {
+    code: 'H1',
+    topic: 'hele',
+    number: 1,
+    title: 'Plus og minus',
+    description: 'Læg sammen og træk fra med tal op til 99.',
+    example: '47 + 38',
+    available: true,
+    reduce: 'nudge',
+    form: 'frac',
+    feedback: 'explain',
+    stepwise: true,
+  },
+  {
+    code: 'H2',
+    topic: 'hele',
+    number: 2,
+    title: 'Gange og division',
+    description: 'Den lille tabel – og division, der går op.',
+    example: '7 · 8',
+    available: true,
+    reduce: 'nudge',
+    form: 'frac',
+    feedback: 'explain',
+    stepwise: true,
+  },
+  {
+    code: 'H3',
+    topic: 'hele',
+    number: 3,
+    title: 'Alle fire regnearter',
+    description: 'Plus, minus, gange og division på større baner.',
+    example: '84 : 4',
+    available: true,
+    reduce: 'nudge',
+    form: 'frac',
+    feedback: 'explain',
+    stepwise: true,
+  },
+  {
+    code: 'H4',
+    topic: 'hele',
+    number: 4,
+    title: 'Negative tal',
+    description: 'Alle fire regnearter med negative tal – hold styr på fortegnet.',
+    example: '−6 − 9',
+    available: true,
+    reduce: 'nudge',
+    form: 'frac',
+    feedback: 'equations',
+    stepwise: true,
+  },
+  {
+    code: 'H5',
+    topic: 'hele',
+    number: 5,
+    title: 'Store baner',
+    description: 'Store baner med flere tomme felter – brug brikkerne til at regne baglæns.',
+    example: '? · ? = −24',
+    available: true,
+    reduce: 'nudge',
+    form: 'frac',
+    feedback: 'equations',
+    stepwise: false,
+  },
   {
     code: '1',
     topic: 'broek',

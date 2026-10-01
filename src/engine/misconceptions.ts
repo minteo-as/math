@@ -61,6 +61,17 @@ export const MISCONCEPTION_TEXT: Record<MisconceptionKind, string> = {
   'alg-conj-sign': '(a + b)(a − b) = a² − b². Det sidste led får minus.',
   'alg-div-degree': 'x² : x = x. Husk at dividere både tallene og x’erne.',
   'alg-divide-first': 'Når et udtryk med flere led divideres, skal hvert led divideres.',
+  'int-carry': 'Husk menten: når enerne tilsammen giver 10 eller mere, skal der 1 over til tierne.',
+  'int-borrow':
+    'Du kan ikke bare tage det mindste ciffer fra det største. Er der for få enere, skal du låne 1 tier (10 enere).',
+  'int-table': 'Tjek gangetabellen – svaret ligner tallet lige ved siden af i tabellen.',
+  'int-div-table': 'Tjek med gange: svaret ganget med det tal, du dividerer med, skal give tallet foran : .',
+  'int-neg-add':
+    'Når fortegnene er forskellige, skal talværdierne trækkes fra hinanden – ikke lægges sammen. Fx −3 + 5 = 2.',
+  'int-neg-sub': 'Når du trækker fra, går du længere ned ad tallinjen – også når du starter under 0: −3 − 5 = −8.',
+  'int-minus-neg': 'At trække et negativt tal fra er det samme som at lægge til: 4 − (−3) = 4 + 3 = 7.',
+  'int-sign-mul':
+    'Tjek fortegnet: plus gange minus giver minus, og minus gange minus giver plus. Det samme gælder ved division.',
 }
 
 export interface TrapCandidate {
@@ -73,6 +84,8 @@ export interface TrapOptions {
   negatives: boolean
   reductionTraps: boolean
   improperTraps: boolean
+  /** Hele tal: fejl med mente, lån, tabeller og fortegn i stedet for brøkfejl. */
+  integer?: boolean
 }
 
 /** Hel del og brøkdel af en positiv brøk, fx 7/4 -> [1, 3/4]. */
@@ -86,6 +99,7 @@ function splitMixed(f: Frac): [number, Frac] {
  * Returnerer kun kandidater, der adskiller sig fra det rigtige svar.
  */
 export function trapCandidates(op: Op, a: Frac, b: Frac, c: Frac, opts: TrapOptions): TrapCandidate[] {
+  if (opts.integer) return integerTrapCandidates(op, a.n, b.n, c.n, opts.negatives)
   if (opts.form === 'dec') return decimalTrapCandidates(op, a, b, c)
   const out: TrapCandidate[] = []
   const push = (f: Frac, kind: MisconceptionKind, form: Form = opts.form, keepUnreduced = false) => {
@@ -164,6 +178,55 @@ export function trapCandidates(op: Op, a: Frac, b: Frac, c: Frac, opts: TrapOpti
     seen.add(key)
     return true
   })
+}
+
+/**
+ * Typiske fejl med hele tal i p ∘ q = c (alle tal er hele og højst 99 i talværdi).
+ * Rækkefølgen betyder noget: giver to fejl samme tal, beholdes den første forklaring.
+ */
+export function integerTrapCandidates(op: Op, p: number, q: number, c: number, negatives: boolean): TrapCandidate[] {
+  const out: TrapCandidate[] = []
+  const push = (v: number, kind: MisconceptionKind) => {
+    if (v === c || v === 0 || Math.abs(v) > 99 || (!negatives && v < 0)) return
+    if (out.some((o) => o.value.n === v)) return
+    out.push({ value: token(frac(v)), kind })
+  }
+  const positive = p > 0 && q > 0
+  const sign = (n: number) => (n < 0 ? -1 : 1)
+  switch (op) {
+    case '+':
+      // 47 + 38 = 75: menten er glemt.
+      if (positive && (p % 10) + (q % 10) >= 10) push(c - 10, 'int-carry')
+      // −3 + 5 = −8: talværdierne er lagt sammen, selvom fortegnene er forskellige.
+      if (sign(p) !== sign(q)) push(sign(p) * (Math.abs(p) + Math.abs(q)), 'int-neg-add')
+      push(p - q, 'wrong-op')
+      break
+    case '-':
+      // 52 − 27 = 35: det mindste ciffer er trukket fra det største i hver kolonne.
+      if (positive && p > q && p % 10 < q % 10) {
+        push(10 * (Math.floor(p / 10) - Math.floor(q / 10)) + (q % 10) - (p % 10), 'int-borrow')
+      }
+      // 4 − (−3) = 1: minus minus er ikke blevet til plus.
+      if (q < 0) push(p + q, 'int-minus-neg')
+      // −3 − 5 = 2: gået op ad tallinjen i stedet for ned.
+      if (p < 0 && q > 0) push(p + q, 'int-neg-sub')
+      push(p + q, 'wrong-op')
+      break
+    case '*':
+      // 7 · 8 = 48 eller 63: nabotallet i tabellen.
+      for (const k of [q, p]) {
+        push(sign(c) * (Math.abs(c) + Math.abs(k)), 'int-table')
+        push(sign(c) * (Math.abs(c) - Math.abs(k)), 'int-table')
+      }
+      break
+    case ':':
+      push(sign(c) * (Math.abs(c) + 1), 'int-div-table')
+      push(sign(c) * (Math.abs(c) - 1), 'int-div-table')
+      break
+  }
+  // 5 − 8 = 3 eller −4 · 6 = 24: fortegnet er glemt.
+  if (negatives && (!positive || c < 0)) push(-c, op === '*' || op === ':' ? 'int-sign-mul' : 'sign')
+  return out
 }
 
 /** Tallet uden komma og antal decimaler, fx 0,25 -> [25, 2]. */
