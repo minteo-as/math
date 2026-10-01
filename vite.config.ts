@@ -5,21 +5,29 @@ import vue from '@vitejs/plugin-vue'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }
 
-/** Kort commit-id: fra GitHub Actions, ellers fra git, ellers tomt. */
-function commitId(): string {
-  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 7)
+function git(args: string): string {
   try {
-    return execSync('git rev-parse --short=7 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+    return execSync(`git ${args}`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
   } catch {
     return ''
   }
 }
 
-// Release-workflowen sætter RELEASE=1. Andre builds viser også commit-id'et,
-// så man kan se forskel på en udgivet version og en test-build.
-const isRelease = process.env.RELEASE === '1'
-const commit = commitId()
-const appVersion = isRelease || !commit ? pkg.version : `${pkg.version}+${commit}`
+/**
+ * Versionen, der vises på siden.
+ *  - Release-build (RELEASE_VERSION sat af release-workflowen): tagget, fx "0.3.0".
+ *  - Ellers: seneste versions-tag + commit-id, fx "0.2.0+c344353". Er commit'en
+ *    selv tagget, vises kun versionen. Uden tags bruges versionen i package.json.
+ */
+function appVersion(): string {
+  const release = process.env.RELEASE_VERSION
+  if (release) return release.replace(/^v/, '')
+  const described = git("describe --tags --long --abbrev=7 --match 'v[0-9]*'") // fx v0.2.0-3-gc344353
+  const m = /^v(.+)-(\d+)-g([0-9a-f]+)$/.exec(described)
+  if (m) return m[2] === '0' ? m[1] : `${m[1]}+${m[3]}`
+  const commit = git('rev-parse --short=7 HEAD')
+  return commit ? `${pkg.version}+${commit}` : pkg.version
+}
 
 // base: './' gør, at det byggede spil kan ligge i en vilkårlig mappe
 // på en statisk webserver (fx GitHub Pages eller skolens intranet).
@@ -27,7 +35,7 @@ export default defineConfig({
   base: './',
   plugins: [vue()],
   define: {
-    __APP_VERSION__: JSON.stringify(appVersion),
+    __APP_VERSION__: JSON.stringify(appVersion()),
   },
   test: {
     include: ['src/**/*.test.ts'],

@@ -25,25 +25,31 @@ Zip-filen indeholder `index.html` og `assets/` direkte i roden og kan pakkes ud 
 
 ## Versioner og releases
 
-Versionsnummeret står i `package.json` og vises nederst på alle sider.
+Versionsnummeret vises nederst på alle sider.
 
-- En **release** viser kun versionen, fx `Version 0.2.0`.
-- **Andre builds** (lokalt og i CI) viser også commit-id'et, fx `Version 0.2.0+9ea6847`. Så kan man se, hvad der faktisk ligger på serveren.
+- En **release** viser sit tag, fx `Version 0.3.0`.
+- **Andre builds** (lokalt og i CI) viser seneste versions-tag plus commit-id, fx `Version 0.2.0+c344353`. Så kan man se, hvad der faktisk ligger på serveren.
+- Findes der endnu ingen tags, bruges versionen i `package.json`.
 
-Sådan laves en release fra `main`:
+En release kan laves på to måder:
 
-```bash
-npm version minor        # eller patch / major – retter package.json og laver tagget, fx v0.3.0
-git push --follow-tags
-```
+1. **På GitHub:** *Releases → Draft a new release*. Vælg et nyt tag, fx `v0.3.0`, skriv eventuelt noter (eller tryk *Generate release notes*), og tryk *Publish release*.
+2. **Fra kommandolinjen:**
+   ```bash
+   npm version minor        # retter package.json og laver tagget, fx v0.3.0
+   git push --follow-tags
+   ```
 
-Tagget starter `.github/workflows/release.yml`. Den:
+Begge starter `.github/workflows/release.yml`. Den:
 
-- stopper, hvis tagget ikke passer til versionen i `package.json`,
+- tjekker, at tagget har formen `vX.Y.Z`,
 - kører de samme tjek som CI,
-- bygger og opretter en GitHub Release med `broekkryds-vX.Y.Z.zip` og automatisk genererede release notes.
+- bygger med tagget som version,
+- lægger `broekkryds-vX.Y.Z.zip` på releasen (vej 2 opretter selv releasen).
 
 Zip-filen pakkes ud direkte på webserveren.
+
+Laves releasen på GitHub, bliver `package.json` ikke rettet automatisk. Workflowen giver en advarsel, men fejler ikke. Ret den ved lejlighed.
 
 Tommelfingerregel for versionsnumre:
 
