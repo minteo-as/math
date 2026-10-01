@@ -23,6 +23,36 @@ npm run generate   # lav banerne igen (src/data/puzzles.json)
 
 Zip-filen indeholder `index.html` og `assets/` direkte i roden og kan pakkes ud på webserveren, som den er.
 
+## Versioner og releases
+
+Versionsnummeret står i `package.json` og vises nederst på alle sider.
+
+- En **release** viser kun versionen, fx `Version 0.2.0`.
+- **Andre builds** (lokalt og i CI) viser også commit-id'et, fx `Version 0.2.0+9ea6847`. Så kan man se, hvad der faktisk ligger på serveren.
+
+Sådan laves en release fra `main`:
+
+```bash
+npm version minor        # eller patch / major – retter package.json og laver tagget, fx v0.3.0
+git push --follow-tags
+```
+
+Tagget starter `.github/workflows/release.yml`. Den:
+
+- stopper, hvis tagget ikke passer til versionen i `package.json`,
+- kører de samme tjek som CI,
+- bygger og opretter en GitHub Release med `broekkryds-vX.Y.Z.zip` og automatisk genererede release notes.
+
+Zip-filen pakkes ud direkte på webserveren.
+
+Tommelfingerregel for versionsnumre:
+
+| Del | Hvornår |
+|---|---|
+| **patch** | rettelser |
+| **minor** | nye niveauer eller emner |
+| **major** | ændringer, der fx gør gemte stjerner ugyldige (nye bane-id'er) |
+
 ## Gameplay
 
 - Hver række (vandret og lodret) er en ligning `a ∘ b = c`. Eleven lægger brikker i de tomme felter.

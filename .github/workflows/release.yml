@@ -1,0 +1,70 @@
+name: Release
+
+# Kører, når et versions-tag pushes, fx:
+#   npm version minor        (retter package.json og laver tagget v0.3.0)
+#   git push --follow-tags
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+
+jobs:
+  release:
+    name: Byg og udgiv
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Tagget skal passe til package.json
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if [ "${GITHUB_REF_NAME}" != "v${VERSION}" ]; then
+            echo "::error::Tagget ${GITHUB_REF_NAME} passer ikke til version ${VERSION} i package.json."
+            exit 1
+          fi
+
+      - name: Installer
+        run: npm ci
+
+      - name: Typetjek
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Banerne er opdaterede
+        run: |
+          npm run generate
+          git diff --exit-code -- src/data/puzzles.json || {
+            echo "::error::src/data/puzzles.json passer ikke til generatoren. Kør 'npm run generate' og commit resultatet."
+            exit 1
+          }
+
+      - name: Byg
+        run: npm run build
+        env:
+          RELEASE: '1'
+
+      - name: Pak dist som zip
+        run: |
+          cd dist
+          zip -r "../broekkryds-${GITHUB_REF_NAME}.zip" .
+
+      - name: Opret GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" "broekkryds-${GITHUB_REF_NAME}.zip" \
+            --title "Brøkkryds ${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --verify-tag
