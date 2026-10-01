@@ -171,6 +171,8 @@ src/data/puzzles.json  De færdiglavede baner (20 pr. niveau)
                        så elevernes gemte stjerner stadig passer til de samme baner.
 src/composables/useGame.ts  Spillets tilstand i brugerfladen
 src/components/, src/views/  Vue-komponenter
+design/ikon.svg     Ikonet (kilde). PNG'erne laves med: node design/render-icons.mjs
+public/favicon.svg  Forenklet ikon til browserfanen (uden tal)
 ```
 
 Banerne laves af et script, og scriptet tjekker hver bane:

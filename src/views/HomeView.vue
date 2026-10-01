@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import logo from '../assets/logo.png'
 import { levelsForTopic, TOPICS } from '../engine/levels'
 import { progress } from '../progress'
 import { puzzlesForLevel } from '../puzzles'
@@ -14,8 +15,11 @@ function levelStars(level: string) {
 <template>
   <div class="page">
     <header class="hero">
-      <h1>Matkryds</h1>
-      <p>Læg brikkerne, så alle regnestykker går op – både vandret og lodret.</p>
+      <img class="logo" :src="logo" alt="" width="76" height="76" />
+      <div>
+        <h1>Matkryds</h1>
+        <p>Læg brikkerne, så alle regnestykker går op – både vandret og lodret.</p>
+      </div>
     </header>
 
     <section v-for="t in TOPICS" :key="t.id" class="topic">
@@ -56,12 +60,26 @@ function levelStars(level: string) {
 </template>
 
 <style scoped>
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 8px 0 22px;
+}
+/* Samme ikon som på hjemmeskærmen (design/ikon.svg). */
+.logo {
+  flex: none;
+  width: 76px;
+  height: 76px;
+  border-radius: 22%;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.15);
+}
 .hero h1 {
-  margin: 8px 0 4px;
-  font-size: 34px;
+  margin: 0 0 2px;
+  font-size: 30px;
 }
 .hero p {
-  margin: 0 0 20px;
+  margin: 0;
   color: var(--muted);
 }
 .topic + .topic {

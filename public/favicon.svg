@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<!-- Forenklet udgave af design/ikon.svg til browserfanen: uden tal, så den står skarpt i 16–32 px. -->
+<rect width="512" height="512" rx="96" fill="#2f6fdd"/>
+<rect x="188" y="42" width="136" height="136" rx="8" fill="#fbe7b4" stroke="#c9b27a" stroke-width="4"/>
+<rect x="188" y="334" width="136" height="136" rx="8" fill="#fbe7b4" stroke="#c9b27a" stroke-width="4"/>
+<rect x="42" y="188" width="136" height="136" rx="8" fill="#fbe7b4" stroke="#c9b27a" stroke-width="4"/>
+<rect x="188" y="188" width="136" height="136" rx="8" fill="#fff8e6" stroke="#c9b27a" stroke-width="4"/>
+<rect x="208" y="245" width="96" height="22" rx="5" fill="#1d2433"/>
+<rect x="245" y="208" width="22" height="96" rx="5" fill="#1d2433"/>
+<rect x="334" y="188" width="136" height="136" rx="22" fill="#e7f6ee" stroke="#7cc39a" stroke-width="6"/>
+</svg>
