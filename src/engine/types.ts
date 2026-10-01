@@ -56,6 +56,14 @@ export type MisconceptionKind =
   | 'alg-conj-sign'
   | 'alg-div-degree'
   | 'alg-divide-first'
+  | 'int-carry'
+  | 'int-borrow'
+  | 'int-table'
+  | 'int-div-table'
+  | 'int-neg-add'
+  | 'int-neg-sub'
+  | 'int-minus-neg'
+  | 'int-sign-mul'
 
 /** En fælde-brik: svaret man får ved en typisk fejl i en bestemt ligning. */
 export interface Trap {

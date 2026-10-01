@@ -56,6 +56,11 @@ interface LevelGen {
   trapValid?(f: Frac): boolean
   /** Ekstra krav til hele banen. */
   puzzleOk(eqs: { op: Op; vals: Frac[] }[]): boolean
+  /**
+   * Prøv op til så mange tilfældige tal i et felt, og tag det første, der også giver
+   * gyldige tal i de ligninger, det låser fast. Uden denne prøves kun ét tal (som altid før).
+   */
+  lookahead?: number
 }
 
 const noTraps = { negatives: false, reductionTraps: false, improperTraps: false }
@@ -81,6 +86,34 @@ function decimalOk(f: Frac, maxDec: number, maxDigits: number): boolean {
 }
 
 const PERCENTS = [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 80, 90, 120, 150]
+
+/** Helt tal med talværdi mellem `min` og 99 – og kun negativt, hvis niveauet har negative tal. */
+function intOk(f: Frac, negatives: boolean, min = 2): boolean {
+  return f.d === 1 && Math.abs(f.n) >= min && Math.abs(f.n) <= 99 && (negatives || f.n > 0)
+}
+
+function intTraps(negatives: boolean): TrapOptions {
+  return { form: 'frac', negatives, reductionTraps: false, improperTraps: false, integer: true }
+}
+
+/** Gange og division med 1 (eller med 1 som resultat) er for let. */
+function noTrivialMul(eqs: { op: Op; vals: Frac[] }[]): boolean {
+  return eqs.every((e) => (e.op !== '*' && e.op !== ':') || e.vals.every((v) => Math.abs(v.n) !== 1))
+}
+
+/** To ens ligninger på samme bane er kedeligt. */
+function distinctEqs(eqs: { op: Op; vals: Frac[] }[]): boolean {
+  return new Set(eqs.map((e) => `${e.op}|${e.vals.map((v) => v.n).join(',')}`)).size === eqs.length
+}
+
+/** Antal plus-stykker med mente og minus-stykker med lån. */
+function carryCount(eqs: { op: Op; vals: Frac[] }[]): number {
+  return eqs.filter(({ op, vals: [a, b] }) =>
+    op === '+' ? (a.n % 10) + (b.n % 10) >= 10 : op === '-' ? a.n % 10 < b.n % 10 : false,
+  ).length
+}
+
+const signed = (rng: Rng, n: number) => frac(rng.next() < 0.5 ? -n : n)
 
 const GENERATORS: Record<string, LevelGen> = {
   1: {
@@ -232,6 +265,87 @@ const GENERATORS: Record<string, LevelGen> = {
     // Mindst halvdelen af ligningerne skal være "procent af".
     puzzleOk: (eqs) => eqs.filter((e) => e.op === 'af').length * 2 >= eqs.length,
   },
+  H1: {
+    templates: ['kite', 'snake', 'anchor', 'wide'],
+    ops: ['+', '-'],
+    form: 'frac',
+    extraBlanks: 0,
+    trapCount: 3,
+    trapOptions: intTraps(false),
+    lookahead: 30,
+    setup: () => ({}),
+    randomValue: (rng) => frac(rng.next() < 0.5 ? rng.int(11, 49) : rng.int(2, 99)),
+    valid: (f) => intOk(f, false),
+    trapValid: (f) => intOk(f, false),
+    // Mindst to stykker skal have mente eller lån.
+    puzzleOk: (eqs) => distinctEqs(eqs) && carryCount(eqs) >= 2,
+  },
+  H2: {
+    templates: ['kite', 'snake', 'anchor', 'wide'],
+    ops: ['*', ':'],
+    form: 'frac',
+    extraBlanks: 0,
+    trapCount: 3,
+    trapOptions: intTraps(false),
+    lookahead: 30,
+    setup: () => ({}),
+    // Tit et produkt fra tabellen, så der er noget at dividere.
+    randomValue: (rng) => frac(rng.next() < 0.6 ? rng.int(2, 10) : rng.int(2, 9) * rng.int(2, 9)),
+    valid: (f) => intOk(f, false),
+    trapValid: (f) => intOk(f, false),
+    puzzleOk: (eqs) => distinctEqs(eqs) && noTrivialMul(eqs) && new Set(eqs.map((e) => e.op)).size === 2,
+  },
+  H3: {
+    templates: ['anchor', 'wide', 'tower', 'snake'],
+    ops: ['+', '-', '*', ':'],
+    form: 'frac',
+    extraBlanks: 0,
+    trapCount: 4,
+    trapOptions: intTraps(false),
+    lookahead: 30,
+    setup: () => ({}),
+    randomValue: (rng) => frac(rng.next() < 0.5 ? rng.int(2, 10) : rng.int(2, 99)),
+    valid: (f) => intOk(f, false),
+    trapValid: (f) => intOk(f, false),
+    puzzleOk: (eqs) => distinctEqs(eqs) && noTrivialMul(eqs) && new Set(eqs.map((e) => e.op)).size >= 3 && carryCount(eqs) >= 1,
+  },
+  H4: {
+    templates: ['anchor', 'wide', 'tower'],
+    ops: ['+', '-', '*', ':'],
+    form: 'frac',
+    extraBlanks: 0,
+    trapCount: 4,
+    trapOptions: intTraps(true),
+    lookahead: 30,
+    setup: () => ({}),
+    randomValue: (rng) => signed(rng, rng.next() < 0.5 ? rng.int(2, 10) : rng.int(2, 60)),
+    valid: (f) => intOk(f, true),
+    trapValid: (f) => intOk(f, true),
+    // Mindst en tredjedel af tallene skal være negative.
+    puzzleOk: (eqs) => {
+      const all = eqs.flatMap((e) => e.vals)
+      const ops = new Set(eqs.map((e) => e.op))
+      return distinctEqs(eqs) && noTrivialMul(eqs) && all.filter((v) => v.n < 0).length * 3 >= all.length && ops.size >= 3
+    },
+  },
+  H5: {
+    templates: ['tower', 'wide', 'zigzag'],
+    ops: ['+', '-', '*', ':'],
+    form: 'frac',
+    extraBlanks: 3,
+    trapCount: 4,
+    trapOptions: intTraps(true),
+    lookahead: 30,
+    setup: () => ({}),
+    randomValue: (rng) => signed(rng, rng.next() < 0.5 ? rng.int(2, 10) : rng.int(2, 60)),
+    valid: (f) => intOk(f, true),
+    trapValid: (f) => intOk(f, true),
+    puzzleOk: (eqs) => {
+      const all = eqs.flatMap((e) => e.vals)
+      const ops = new Set(eqs.map((e) => e.op))
+      return distinctEqs(eqs) && noTrivialMul(eqs) && all.filter((v) => v.n < 0).length * 4 >= all.length && ops.size === 4
+    },
+  },
 }
 
 export function generatorLevels(): string[] {
@@ -314,12 +428,42 @@ function fillValues(
     } else {
       const free = layout.numKeys.filter((k) => !values.has(k))
       const key = rng.pick(free)
-      const value = gen.randomValue(rng, ctx, roles.get(key))
-      if (!gen.valid(value, ctx, roles.get(key))) return null
+      const value = gen.lookahead
+        ? pickAhead(layout, ops, roles, gen, ctx, rng, values, key)
+        : gen.randomValue(rng, ctx, roles.get(key))
+      if (!value || !gen.valid(value, ctx, roles.get(key))) return null
       values.set(key, value)
     }
   }
   return values
+}
+
+/** Et tilfældigt tal til `key`, som ikke straks giver et ugyldigt tal i en ligning, det låser fast. */
+function pickAhead(
+  layout: Layout,
+  ops: Op[],
+  roles: Map<CellKey, Role>,
+  gen: LevelGen,
+  ctx: GenContext,
+  rng: Rng,
+  values: Map<CellKey, Frac>,
+  key: CellKey,
+): Frac | null {
+  for (let t = 0; t < gen.lookahead!; t++) {
+    const value = gen.randomValue(rng, ctx, roles.get(key))
+    if (!gen.valid(value, ctx, roles.get(key))) continue
+    const ok = layout.equations.every((eq, i) => {
+      if (!eq.nums.includes(key)) return true
+      const known = eq.nums.map((k) => (k === key ? value : (values.get(k) ?? null))) as [Frac | null, Frac | null, Frac | null]
+      const missing = known.filter((v) => !v).length
+      if (missing !== 1) return true
+      const pos = known.findIndex((v) => !v) as 0 | 1 | 2
+      const forced = solveFor(ops[i], pos, known)
+      return forced !== null && gen.valid(forced, ctx, roles.get(eq.nums[pos]))
+    })
+    if (ok) return value
+  }
+  return null
 }
 
 /** Skriveformen for et tal-felt. */

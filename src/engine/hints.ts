@@ -119,8 +119,12 @@ export function explainSteps(puzzle: Puzzle, target: HintTarget, level: LevelInf
     else if (eq.op === '+' || eq.op === '*') [op, p, q] = [inverse[eq.op], c, a]
     else [op, p, q] = [eq.op, a, c]
     const show = (f: Frac) => (level.form === 'dec' ? decimalText(f) : paren(f, level.form === 'mixed' ? 'mixed' : 'frac'))
-    lines.push(`Omskriv, så ? står alene:  ? = ${show(p)} ${OP_SYMBOL[op]} ${show(q)}`)
+    // Hele tal: kun det højre led får parentes, fx −16 − (−8).
+    const left = level.topic === 'hele' ? signed(p.n) : show(p)
+    lines.push(`Omskriv, så ? står alene:  ? = ${left} ${OP_SYMBOL[op]} ${show(q)}`)
   }
+
+  if (level.topic === 'hele') return [...lines, ...integerSteps(op, p.n, q.n)]
 
   if (level.form === 'dec') return [...lines, ...decimalSteps(op, p, q)]
 
@@ -184,6 +188,89 @@ export function substitutionHint(puzzle: Puzzle, target: HintTarget): string[] {
   const vals = eq.nums.map((k) => truth.get(k)!) as [Poly, Poly, Poly]
   const x = chooseX(vals[pos], puzzle.tiles.map(tokenPoly))
   return substitutionLines(eq.op, vals, pos, x)
+}
+
+const tens = (n: number) => Math.floor(n / 10) * 10
+
+/** p + q med positive tal: ener for sig og tiere for sig. */
+function additionSteps(p: number, q: number): string[] {
+  if (p < 10 && q < 10) return [`Tæl videre fra det største tal:  ${Math.max(p, q)} + ${Math.min(p, q)}`]
+  const round = [p, q].find((n) => n % 10 === 0)
+  if (round !== undefined) {
+    const other = round === p ? q : p
+    return [`${round} er hele tiere, så kun tierne ændrer sig:  ${tens(other)} + ${round} – enerne er stadig ${other % 10}.`]
+  }
+  const carry = 'Giver det 10 eller mere, går der 1 i mente over til tierne.'
+  return [
+    `Læg enerne sammen:  ${p % 10} + ${q % 10}. ${carry}`,
+    p < 10 || q < 10
+      ? `Tierne er ${tens(Math.max(p, q))} – plus menten, hvis der er en.`
+      : `Læg tierne sammen:  ${tens(p)} + ${tens(q)} – og husk menten, hvis der er en.`,
+  ]
+}
+
+/** p − q med positive tal og p ≥ q: ener for sig og tiere for sig (med lån). */
+function subtractionSteps(p: number, q: number): string[] {
+  if (p < 20 && q < 10) return [`Tæl ${q} tilbage fra ${p}.`]
+  if (q % 10 === 0) {
+    return [`${q} er hele tiere, så kun tierne ændrer sig:  ${tens(p)} − ${q} – enerne er stadig ${p % 10}.`]
+  }
+  const borrow = p % 10 < q % 10
+  const lines = [`Træk enerne fra hinanden:  ${p % 10} − ${q % 10}.`]
+  if (borrow) lines.push(`Der er for få enere, så lån 1 tier:  ${(p % 10) + 10} − ${q % 10}.`)
+  if (q < 10) lines.push(borrow ? `Tierne er nu én tier mindre end ${tens(p)}.` : `Tierne er de samme som i ${p}.`)
+  else lines.push(`Træk tierne fra hinanden:  ${tens(p)} − ${tens(q)}${borrow ? ' – og husk den tier, du lånte.' : ''}`)
+  return lines
+}
+
+/** Mellemregning for p ∘ q med hele tal – uden at give selve svaret. */
+export function integerSteps(op: Op, p: number, q: number): string[] {
+  const abs = Math.abs
+  switch (op) {
+    case '+': {
+      if (p > 0 && q > 0) return additionSteps(p, q)
+      if (p < 0 && q < 0) {
+        return [`Begge tal er negative: læg talværdierne sammen (${abs(p)} + ${abs(q)}), og sæt minus foran.`]
+      }
+      const [big, small] = abs(p) >= abs(q) ? [p, q] : [q, p]
+      return [
+        `Fortegnene er forskellige: træk den mindste talværdi fra den største:  ${abs(big)} − ${abs(small)}`,
+        `Svaret får samme fortegn som ${signed(big)}, fordi det har den største talværdi.`,
+      ]
+    }
+    case '-': {
+      if (p > 0 && q > 0 && p < q) {
+        return [`Du trækker mere fra, end du har, så svaret bliver negativt. Regn ${q} − ${p}, og sæt minus foran.`]
+      }
+      if (p > 0 && q > 0) return subtractionSteps(p, q)
+      return [
+        `At trække et tal fra er det samme som at lægge det modsatte tal til:  ${signed(p)} − ${num(q)} = ${signed(p)} + ${num(-q)}`,
+        ...integerSteps('+', p, -q),
+      ]
+    }
+    case '*':
+    case ':': {
+      const lines: string[] = []
+      if (op === '*') {
+        const [big, small] = abs(p) >= abs(q) ? [abs(p), abs(q)] : [abs(q), abs(p)]
+        if (big > 10 && big % 10 !== 0) {
+          lines.push(`Del det store tal op:  ${big} · ${small} = ${tens(big)} · ${small} + ${big % 10} · ${small}`)
+        } else lines.push(`Brug gangetabellen:  ${abs(p)} · ${abs(q)}`)
+      } else {
+        lines.push(`Hvilket tal ganget med ${abs(q)} giver ${abs(p)}? Brug gangetabellen.`)
+      }
+      if (p < 0 || q < 0) {
+        lines.push(
+          p < 0 && q < 0
+            ? 'Fortegn: minus og minus giver plus.'
+            : 'Fortegn: plus og minus giver minus.',
+        )
+      }
+      return lines
+    }
+    default:
+      return []
+  }
 }
 
 /** Decimaltal med præcis `k` decimaler, fx (0,7; 2) -> "0,70". */

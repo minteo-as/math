@@ -7,17 +7,29 @@ import { levelInfo } from './levels'
 import { deductionOrder, findSolutions } from './solver'
 import { pequals, pevalAt, tokenPoly, valueText } from './value'
 import { equals } from './fraction'
-import { TEMPLATES } from './templates'
+import { equationCells, TEMPLATES, WIDE_TEMPLATES } from './templates'
 import type { PuzzleFile } from './types'
 
 const file = data as unknown as PuzzleFile
 
 describe('skabeloner', () => {
-  it.each(Object.values(TEMPLATES))('$name er gyldig og højst 7 kolonner bred', (t) => {
+  it.each(Object.values(TEMPLATES))('$name er gyldig og ikke for bred', (t) => {
     const layout = layoutOf(t)
-    expect(layout.cols).toBeLessThanOrEqual(7)
+    expect(layout.cols).toBeLessThanOrEqual(WIDE_TEMPLATES.includes(t.name) ? 9 : 7)
     // Gitteret gør ulige kolonner/rækker smalle – de må kun indeholde regnetegn og =.
     for (const eq of t.equations) expect([eq.r % 2, eq.c % 2]).toEqual([0, 0])
+  })
+
+  it.each(Object.values(TEMPLATES))('$name: ingen ligning løber sammen med en anden', (t) => {
+    const layout = layoutOf(t)
+    for (const eq of t.equations) {
+      const cells = equationCells(eq)
+      const [dr, dc] = eq.dir === 'h' ? [0, 1] : [1, 0]
+      const before = `${cells[0][0] - dr},${cells[0][1] - dc}`
+      const after = `${cells[4][0] + dr},${cells[4][1] + dc}`
+      expect(layout.kinds.has(before)).toBe(false)
+      expect(layout.kinds.has(after)).toBe(false)
+    }
   })
 })
 
@@ -93,6 +105,20 @@ describe.each(file.puzzles.map((p) => [p.id, p] as const))('bane %s', (_id, puzz
       if (!pequals(tp, correct)) expect(equals(pevalAt(tp, x), v)).toBe(false)
     }
     expect(eq.nums).toContain(target.cell)
+  })
+
+  it('hele tal: alle tal er hele, højst 99 i talværdi og kun negative fra niveau 4', () => {
+    if (level.topic !== 'hele') return
+    const negatives = level.number >= 4
+    const values = [...puzzle.tiles, ...puzzle.cells.flatMap((c) => (c.kind === 'given' ? [c.value] : []))]
+    for (const t of values) {
+      expect(t.form).toBe('frac')
+      if (t.form === 'expr') continue
+      expect(t.d).toBe(1)
+      expect(Math.abs(t.n)).toBeGreaterThanOrEqual(2)
+      expect(Math.abs(t.n)).toBeLessThanOrEqual(99)
+      if (!negatives) expect(t.n).toBeGreaterThan(0)
+    }
   })
 
   it('hints virker fra et tomt bræt', () => {

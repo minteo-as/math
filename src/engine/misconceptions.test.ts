@@ -59,3 +59,34 @@ describe('typiske fejl med decimaltal og procent', () => {
     expect(texts(1)).toEqual({ 'pct-mul-instead': '5' })
   })
 })
+
+describe('typiske fejl med hele tal', () => {
+  const pos: TrapOptions = { ...plain, integer: true }
+  const neg: TrapOptions = { ...plain, integer: true, negatives: true }
+
+  it('mente og lån', () => {
+    expect(traps('+', frac(47), frac(38), pos)['int-carry']).toBe('75')
+    expect(traps('-', frac(52), frac(27), pos)['int-borrow']).toBe('35')
+  })
+
+  it('gangetabel og division', () => {
+    const found = traps('*', frac(7), frac(8), pos)
+    expect(found['int-table']).toBeDefined()
+    expect(traps(':', frac(56), frac(8), pos)['int-div-table']).toMatch(/^(6|8)$/)
+  })
+
+  it('fortegn', () => {
+    expect(traps('-', frac(4), frac(-3), neg)['int-minus-neg']).toBe('1')
+    expect(traps('-', frac(-3), frac(5), neg)['int-neg-sub']).toBe('2')
+    expect(traps('+', frac(-3), frac(5), neg)['int-neg-add']).toBe('−8')
+    expect(traps('*', frac(-4), frac(6), neg)['int-sign-mul']).toBe('24')
+    expect(traps('-', frac(5), frac(8), neg)['sign']).toBe('3')
+  })
+
+  it('ingen negative fælder eller tal over 99 uden negative tal', () => {
+    const all = trapCandidates('-', frac(60), frac(52), frac(8), pos).concat(
+      trapCandidates('+', frac(60), frac(39), frac(99), pos),
+    )
+    for (const t of all) expect(t.value.n > 0 && t.value.n <= 99).toBe(true)
+  })
+})

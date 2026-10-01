@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { OP_SYMBOL } from '../engine/fraction'
+import { levelInfo } from '../engine/levels'
 import type { Board } from '../engine/evaluate'
 import { cellKey, type CellKey, type Puzzle } from '../engine/types'
 import FractionView from './FractionView.vue'
@@ -51,6 +52,11 @@ const parenCells = computed(() => {
   return set
 })
 
+/** Hele tal: negative tal efter et regnetegn står i parentes, fx 5 − (−3). */
+const negParenCells = computed(() =>
+  levelInfo(props.puzzle.level).topic === 'hele' ? new Set(props.puzzle.equations.map((eq) => eq.nums[1])) : new Set<CellKey>(),
+)
+
 const wrongCells = computed(() => new Set(props.wrongEquations.flatMap((i) => props.puzzle.equations[i].cells)))
 const hintCells = computed(() => new Set(props.hintEquation === null ? [] : props.puzzle.equations[props.hintEquation].cells))
 
@@ -92,10 +98,20 @@ const cells = computed(() =>
         @click="emit('tapCell', c.key)"
         @pointerdown="c.tile !== null && !c.classes.locked && emit('dragStart', $event, c.tile)"
       >
-        <FractionView v-if="c.tile !== null" :value="puzzle.tiles[c.tile]" :paren="parenCells.has(c.key)" />
+        <FractionView
+          v-if="c.tile !== null"
+          :value="puzzle.tiles[c.tile]"
+          :paren="parenCells.has(c.key)"
+          :neg-paren="negParenCells.has(c.key)"
+        />
       </button>
       <div v-else class="cell" :class="c.classes" :style="c.style">
-        <FractionView v-if="c.cell.kind === 'given'" :value="c.cell.value" :paren="parenCells.has(c.key)" />
+        <FractionView
+          v-if="c.cell.kind === 'given'"
+          :value="c.cell.value"
+          :paren="parenCells.has(c.key)"
+          :neg-paren="negParenCells.has(c.key)"
+        />
         <span v-else-if="c.cell.kind === 'op'" class="symbol" :class="{ word: c.cell.op === 'af' }">{{
           OP_SYMBOL[c.cell.op]
         }}</span>
