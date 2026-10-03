@@ -1,21 +1,32 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref } from 'vue'
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import logo from '../assets/logo.png'
-import { dismissInstallHint, shouldShowInstallHint } from '../installHint'
+import { dismissInstallHint, installed, installHintPlatform, installPrompt, promptInstall } from '../installHint'
 
 /**
- * Forslag på forsiden: læg spillet på hjemmeskærmen (kun i browseren på iPhone/iPad, se
- * installHint.ts). iOS kan ikke installere siden fra et script, så det er en vejledning
- * med tegninger af de tre trin i Safari.
+ * Forslag på forsiden: læg spillet på hjemmeskærmen (iPhone/iPad) eller startskærmen (Android),
+ * se installHint.ts. På Android kan browseren ofte selv installere spillet med et tryk
+ * ("Installér"). Ellers – og altid på iOS – er det en vejledning med tegninger af trinene.
  */
-const visible = ref(shouldShowInstallHint())
+const platform = installHintPlatform()
+const visible = ref(platform !== null)
+const screenName = platform === 'android' ? 'startskærmen' : 'hjemmeskærmen'
 const open = ref(false)
 const sheet = ref<HTMLElement | null>(null)
 const showButton = ref<HTMLButtonElement | null>(null)
 
+watch(installed, (done) => {
+  if (done) visible.value = false
+})
+
 function notNow() {
   dismissInstallHint()
   visible.value = false
+}
+
+async function install() {
+  if (await promptInstall()) visible.value = false
+  // Afviser brugeren browserens dialog, kan den ikke åbnes igen – så viser kortet vejledningen.
 }
 
 function show() {
@@ -40,9 +51,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   <section v-if="visible" class="install" aria-labelledby="install-title">
     <div class="install-text">
       <h2 id="install-title">Spil Matkryds som en app</h2>
-      <p>Læg spillet på hjemmeskærmen. Så fylder det hele skærmen og virker også uden net.</p>
+      <p>Læg spillet på {{ screenName }}. Så fylder det hele skærmen og virker også uden net.</p>
       <div class="install-actions">
-        <button ref="showButton" type="button" class="primary" @click="show">Vis mig hvordan</button>
+        <button v-if="platform === 'android' && installPrompt" type="button" class="primary" @click="install">
+          Installér
+        </button>
+        <button v-else ref="showButton" type="button" class="primary" @click="show">Vis mig hvordan</button>
         <button type="button" class="link" @click="notNow">Ikke nu</button>
       </div>
     </div>
@@ -50,8 +64,47 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
   <div v-if="open" class="backdrop" @click.self="close">
     <div ref="sheet" class="sheet" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="sheet-title">
-      <h2 id="sheet-title">Læg Matkryds på hjemmeskærmen</h2>
-      <ol class="steps">
+      <h2 id="sheet-title">Læg Matkryds på {{ screenName }}</h2>
+      <ol v-if="platform === 'android'" class="steps">
+        <li>
+          <!-- Chromes adresselinje med menuen ⋮ -->
+          <div class="mock bar" aria-hidden="true">
+            <span class="address">math.sundskard.dk</span>
+            <span class="key hot">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="5" r="1.4" />
+                <circle cx="12" cy="12" r="1.4" />
+                <circle cx="12" cy="19" r="1.4" />
+              </svg>
+            </span>
+          </div>
+          <p>Tryk på browserens menu. I Chrome er det de tre prikker <strong>⋮</strong> øverst til højre.</p>
+        </li>
+        <li>
+          <!-- Menuen. Punkterne er forskellige fra browser til browser, så kun det rigtige har tekst. -->
+          <div class="mock menu" aria-hidden="true">
+            <span class="row"><span class="blank"></span></span>
+            <span class="row hot">
+              Føj til startskærm
+              <svg viewBox="0 0 24 24">
+                <rect x="6" y="2" width="12" height="20" rx="3" />
+                <path d="M12 9v6M9 12h6" />
+              </svg>
+            </span>
+            <span class="row"><span class="blank short"></span></span>
+          </div>
+          <p>Vælg <strong>Føj til startskærm</strong> eller <strong>Installer app</strong>.</p>
+        </li>
+        <li>
+          <!-- Browserens dialog -->
+          <div class="mock add" aria-hidden="true">
+            <span class="add-app"><img :src="logo" alt="" width="34" height="34" />Matkryds</span>
+            <span class="add-foot"><span>Annuller</span><span class="hot-text">Installer</span></span>
+          </div>
+          <p>Tryk på <strong>Installer</strong> eller <strong>Tilføj</strong>.</p>
+        </li>
+      </ol>
+      <ol v-else class="steps">
         <li>
           <!-- Safaris værktøjslinje: ••• og Del-knappen -->
           <div class="mock bar" aria-hidden="true">
@@ -115,7 +168,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
           </p>
         </li>
       </ol>
-      <p class="note">
+      <p v-if="platform === 'android'" class="note">
+        Åbn derefter spillet fra ikonet på startskærmen. Dine stjerner kommer med.
+      </p>
+      <p v-else class="note">
         Åbn derefter spillet fra ikonet på hjemmeskærmen. Appen husker sine egne stjerner – dem, du har fået her i
         browseren, kommer ikke med over.
       </p>
@@ -255,6 +311,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+.mock circle {
+  fill: currentColor;
+}
 .bar {
   align-items: center;
   gap: 8px;
@@ -353,6 +412,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   flex-direction: column;
   gap: 8px;
   padding: 8px 12px 10px;
+}
+.add-foot {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  color: var(--muted);
 }
 .add-head {
   display: flex;
