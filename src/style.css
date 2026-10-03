@@ -84,6 +84,16 @@ body {
   background: var(--page-bg);
 }
 
+/* Fra hjemmeskærmen scroller selve siden aldrig – .screen i App.vue scroller indeni. */
+@media screen and (display-mode: standalone) {
+  html,
+  body,
+  #app {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
 .app {
   max-width: var(--page-max);
   margin: 0 auto;

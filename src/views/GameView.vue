@@ -70,9 +70,11 @@ function closeHelp() {
 }
 
 // ---------- Nedtoning bag hjælpemenuen og "Flot klaret!" ----------
-// Safari på iPhone farver statuslinjen ud fra siden, når den indlæses, og ændrer den ikke
-// bagefter. En nedtoning helt op til kanten giver derfor en lys statuslinje over en mørk
-// topbjælke. Så nedtoningen starter under topbjælken (--dim-top, se ::before i CSS).
+// I browseren farver Safari på iPhone statuslinjen ud fra spillesidens faste element, når
+// siden indlæses, og ændrer den ikke bagefter. En nedtoning helt op til kanten giver derfor
+// en lys statuslinje over en mørk topbjælke. Så nedtoningen starter under topbjælken
+// (--dim-top, se ::before i CSS). Fra hjemmeskærmen følger statuslinjen med (se App.vue),
+// så dér tones hele skærmen ned.
 const topbar = ref<HTMLElement | null>(null)
 const dimTop = ref('0px')
 watch(
@@ -595,6 +597,12 @@ function goNext() {
 }
 .overlay::before {
   background: rgb(0 0 0 / 0.35);
+}
+@media (display-mode: standalone) {
+  .help-backdrop::before,
+  .overlay::before {
+    inset: 0;
+  }
 }
 .dialog {
   width: min(360px, 100%);
