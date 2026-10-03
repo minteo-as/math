@@ -203,4 +203,3 @@ export function terms(p: Poly): [Frac, number][] {
 export function monomial(k: Frac, d: number): Poly {
   return trim([...Array.from({ length: d }, () => frac(0)), k])
 }
-

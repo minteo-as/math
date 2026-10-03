@@ -32,8 +32,8 @@ const instruction = computed(() =>
   level?.form === 'ladder'
     ? 'Skriv i den stiplede boks, hvad du gør på begge sider, og skriv på rækken under, hvad der så står på hver side. Brug brikkerne fra boksen – ikke alle skal bruges.'
     : level?.form === 'expr'
-    ? 'Skriv udtrykkene fra boksen i de tomme felter, så alle regnestykker går op – både vandret og lodret. Ikke alle udtryk skal bruges.'
-    : 'Skriv tallene fra boksen i de tomme felter, så alle regnestykker går op – både vandret og lodret. Ikke alle tal skal bruges.',
+      ? 'Skriv udtrykkene fra boksen i de tomme felter, så alle regnestykker går op – både vandret og lodret. Ikke alle udtryk skal bruges.'
+      : 'Skriv tallene fra boksen i de tomme felter, så alle regnestykker går op – både vandret og lodret. Ikke alle tal skal bruges.',
 )
 
 // Titlen bliver filnavnet, hvis man "udskriver" til PDF.
@@ -111,7 +111,6 @@ function print() {
           <span v-for="(t, i) in p.tiles" :key="i" class="tile"><FractionView :value="t" :fit="false" /></span>
         </div>
       </section>
-
     </template>
   </div>
 </template>

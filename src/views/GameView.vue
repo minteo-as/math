@@ -34,7 +34,9 @@ function scrollBehavior(): ScrollBehavior {
 
 /** Vis et felt på brættet, hvis det er scrollet ud af syne. */
 function reveal(selector: string, block: ScrollLogicalPosition) {
-  nextTick(() => boardWrap.value?.querySelector(selector)?.scrollIntoView({ block, inline: 'nearest', behavior: scrollBehavior() }))
+  nextTick(() =>
+    boardWrap.value?.querySelector(selector)?.scrollIntoView({ block, inline: 'nearest', behavior: scrollBehavior() }),
+  )
 }
 
 /** Ny besked eller nyt hint øverst i bunden: rul bunden op, så teksten kan ses. */
@@ -221,7 +223,9 @@ function goNext() {
 
   <div v-else class="page game" :class="{ 'many-tiles': game.tiles.length > 9 }">
     <header class="topbar">
-      <RouterLink class="icon-btn" :to="{ name: 'level', params: { level: puzzle.level } }" aria-label="Tilbage">←</RouterLink>
+      <RouterLink class="icon-btn" :to="{ name: 'level', params: { level: puzzle.level } }" aria-label="Tilbage"
+        >←</RouterLink
+      >
       <div class="title">
         <strong>Niveau {{ game.level.number }} · Bane {{ puzzle.index }}</strong>
         <span>{{ topic?.title }}: {{ game.level.title }}</span>
@@ -234,7 +238,9 @@ function goNext() {
       >
         <PrintIcon />
       </RouterLink>
-      <button type="button" class="icon-btn" aria-label="Start forfra" title="Start forfra" @click="game.restart()">↻</button>
+      <button type="button" class="icon-btn" aria-label="Start forfra" title="Start forfra" @click="game.restart()">
+        ↻
+      </button>
     </header>
 
     <p v-if="ruleText" class="rule">{{ ruleText }}</p>

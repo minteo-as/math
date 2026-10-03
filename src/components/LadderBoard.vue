@@ -82,9 +82,14 @@ function label(c: Cell): string {
 const el = ref<HTMLElement | null>(null)
 const active = ref<CellKey | null>(null)
 const blankKeys = computed(() =>
-  rows.value.flatMap((r) => [r.left, r.right, r.step]).filter((c): c is Cell => !!c && c.slot.kind === 'blank').map((c) => c.key),
+  rows.value
+    .flatMap((r) => [r.left, r.right, r.step])
+    .filter((c): c is Cell => !!c && c.slot.kind === 'blank')
+    .map((c) => c.key),
 )
-const tabCell = computed(() => (active.value && blankKeys.value.includes(active.value) ? active.value : blankKeys.value[0]))
+const tabCell = computed(() =>
+  active.value && blankKeys.value.includes(active.value) ? active.value : blankKeys.value[0],
+)
 
 function cellButtons(): HTMLElement[] {
   return [...(el.value?.querySelectorAll<HTMLElement>('button[data-cell]') ?? [])]
@@ -141,7 +146,9 @@ defineExpose({ focusCell, activeCell: () => active.value })
           @click="emit('tapCell', row.step.key, $event.detail === 0)"
           @focus="active = row.step.key"
           @keydown="onKeydown"
-          @pointerdown="tileAt(row.step) !== null && !locked.has(row.step.key) && emit('dragStart', $event, tileAt(row.step)!)"
+          @pointerdown="
+            tileAt(row.step) !== null && !locked.has(row.step.key) && emit('dragStart', $event, tileAt(row.step)!)
+          "
         >
           <FractionView v-if="tileAt(row.step) !== null" :value="puzzle.tiles[tileAt(row.step)!]" plain />
           <span v-if="wrongEquations.includes(i)" class="badge badge-wrong" aria-label="Forkert">✗</span>

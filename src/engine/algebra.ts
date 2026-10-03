@@ -156,11 +156,18 @@ export function algebraSteps(origOp: Op, op: Op, p: Poly, q: Poly, pos: 0 | 1 | 
         if (tp[0][1] === 0 || tq[0][1] === 0) {
           lines.push(`Gang tallene:  ${fracText(tp[0][0])} · ${fracText(tq[0][0])}. x-delen er den samme.`)
         } else {
-          lines.push(`Gang tallene for sig og x’erne for sig:  ${fracText(tp[0][0])} · ${fracText(tq[0][0])}  og  ${powText(tp[0][1])} · ${powText(tq[0][1])}`)
+          lines.push(
+            `Gang tallene for sig og x’erne for sig:  ${fracText(tp[0][0])} · ${fracText(tq[0][0])}  og  ${powText(tp[0][1])} · ${powText(tq[0][1])}`,
+          )
         }
       } else if (isMono(p) !== isMono(q)) {
         const [m, r] = isMono(p) ? [p, q] : [q, p]
-        lines.push(`Gang ${txt(m)} ind på hvert led i parentesen:  ` + terms(r).map(([k, d]) => `${txt(m)} · ${par(monomial(k, d))}`).join('  og  '))
+        lines.push(
+          `Gang ${txt(m)} ind på hvert led i parentesen:  ` +
+            terms(r)
+              .map(([k, d]) => `${txt(m)} · ${par(monomial(k, d))}`)
+              .join('  og  '),
+        )
       } else if (pequals(p, q)) {
         lines.push('Det er en kvadratsætning:  (a + b)² = a² + 2ab + b²')
       } else {
@@ -174,7 +181,9 @@ export function algebraSteps(origOp: Op, op: Op, p: Poly, q: Poly, pos: 0 | 1 | 
       if (isMono(p) && isMono(q) && tq[0][1] === 0) {
         lines.push(`Divider tallene:  ${fracText(tp[0][0])} : ${fracText(tq[0][0])}. x-delen er den samme.`)
       } else if (isMono(p) && isMono(q)) {
-        lines.push(`Divider tallene for sig og x’erne for sig:  ${fracText(tp[0][0])} : ${fracText(tq[0][0])}  og  ${powText(tp[0][1])} : ${powText(tq[0][1])}`)
+        lines.push(
+          `Divider tallene for sig og x’erne for sig:  ${fracText(tp[0][0])} : ${fracText(tq[0][0])}  og  ${powText(tp[0][1])} : ${powText(tq[0][1])}`,
+        )
       } else if (isMono(q)) {
         lines.push(`Divider hvert led med ${txt(q)}.`)
       } else {

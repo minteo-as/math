@@ -272,7 +272,8 @@ function build(code: string, d: Draft, gen: LadderLevelGen, rng: Rng): LadderPuz
   // Rigtige brikker til alle tomme felter.
   d.steps.forEach(({ tile }, i) => {
     puzzle.solution[stepKey(i)] = puzzle.tiles.push(tile) - 1
-    if (puzzle.rows[i + 1].left.kind === 'blank') puzzle.solution[leftKey(i + 1)] = puzzle.tiles.push(d.rows[i + 1][0]) - 1
+    if (puzzle.rows[i + 1].left.kind === 'blank')
+      puzzle.solution[leftKey(i + 1)] = puzzle.tiles.push(d.rows[i + 1][0]) - 1
     puzzle.solution[rightKey(i + 1)] = puzzle.tiles.push(d.rows[i + 1][1]) - 1
   })
   if (countLadderSolutions(puzzle) !== 1) return null
@@ -296,7 +297,11 @@ function build(code: string, d: Draft, gen: LadderLevelGen, rng: Rng): LadderPuz
     puzzle.traps.push({ tile: puzzle.tiles.length - 1, step: trap.step, cell: trap.cell, kind: trap.kind })
   }
   // Mangler der fælder, fyldes op med tal tæt på løsningen.
-  for (let tries = 0; puzzle.tiles.length < Object.keys(puzzle.solution).length + gen.trapCount && tries < 50; tries++) {
+  for (
+    let tries = 0;
+    puzzle.tiles.length < Object.keys(puzzle.solution).length + gen.trapCount && tries < 50;
+    tries++
+  ) {
     const value = num(d.x + rng.pick([-3, -2, -1, 1, 2, 3]) * rng.int(1, 3))
     if (!allowed(value) || puzzle.tiles.some((t) => tokenKey(t) === tokenKey(value))) continue
     puzzle.tiles.push(value)
@@ -348,4 +353,3 @@ export function generateLadderLevel(code: string, count: number, baseSeed: numbe
   }
   return puzzles
 }
-

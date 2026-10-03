@@ -48,7 +48,12 @@ export const TOPICS: Topic[] = [
     description: 'Løs ligningen trin for trin – gør det samme på begge sider af lighedstegnet.',
     available: true,
   },
-  { id: 'algebra', title: 'Algebra', description: 'Reducer udtryk med x – fra at samle led til kvadratsætninger.', available: true },
+  {
+    id: 'algebra',
+    title: 'Algebra',
+    description: 'Reducer udtryk med x – fra at samle led til kvadratsætninger.',
+    available: true,
+  },
 ]
 
 export interface LevelInfo {
@@ -374,14 +379,17 @@ export function topicInfo(id: TopicId): Topic {
 
 /** Den særlige regel for banen, som vises over brættet (tom tekst, hvis der ikke er nogen). */
 export function ruleText(level: LevelInfo, puzzle: Puzzle | LadderPuzzle): string {
-  if (level.form === 'ladder' || puzzle.kind === 'ladder') return 'Løs ligningen trin for trin. Gør det samme på begge sider.'
+  if (level.form === 'ladder' || puzzle.kind === 'ladder')
+    return 'Løs ligningen trin for trin. Gør det samme på begge sider.'
   if (level.form === 'expr') return 'Udtrykkene på hver side af = skal være ens – for alle værdier af x.'
   if (level.form === 'dec') {
     const hasPercent = puzzle.equations.some((e) => e.op === 'af')
     return hasPercent ? 'Procenter skrives med %, alle andre tal som decimaltal.' : ''
   }
   if (level.reduce === 'required') {
-    return level.form === 'mixed' ? 'Svar skal være forkortede og skrevet som blandede tal.' : 'Svar skal være forkortede.'
+    return level.form === 'mixed'
+      ? 'Svar skal være forkortede og skrevet som blandede tal.'
+      : 'Svar skal være forkortede.'
   }
   return ''
 }

@@ -25,12 +25,10 @@ export const MISCONCEPTION_TEXT: Record<MisconceptionKind, string> = {
   'sub-across':
     'Det ligner, at du har trukket tællere og nævnere fra hinanden hver for sig. Find en fællesnævner først.',
   'same-den-add': 'Når nævnerne er ens, skal kun tællerne lægges sammen. Nævneren bliver den samme.',
-  'numerator-not-expanded':
-    'Du har fundet fællesnævneren, men glemt at forlænge tællerne med det samme tal.',
+  'numerator-not-expanded': 'Du har fundet fællesnævneren, men glemt at forlænge tællerne med det samme tal.',
   'wrong-op': 'Tjek regnetegnet – det ligner, at du har regnet med det modsatte regnetegn.',
   'mul-whole-both': 'Når et helt tal ganges med en brøk, ganges kun tælleren – ikke nævneren.',
-  'mul-cross':
-    'Ved gange ganges tæller med tæller og nævner med nævner. Du skal ikke vende nogen af brøkerne.',
+  'mul-cross': 'Ved gange ganges tæller med tæller og nævner med nævner. Du skal ikke vende nogen af brøkerne.',
   'div-no-flip': 'Ved division skal du gange med den omvendte brøk. Husk at vende brøken efter : .',
   'div-flip-first': 'Du har vendt den forkerte brøk. Det er brøken EFTER : , der skal vendes.',
   'mixed-sub-parts':
@@ -72,11 +70,13 @@ export const MISCONCEPTION_TEXT: Record<MisconceptionKind, string> = {
   'int-minus-neg': 'At trække et negativt tal fra er det samme som at lægge til: 4 − (−3) = 4 + 3 = 7.',
   'int-sign-mul':
     'Tjek fortegnet: plus gange minus giver minus, og minus gange minus giver plus. Det samme gælder ved division.',
-  'lig-sign-op': 'Gør det modsatte: står der +5 sammen med x, skal du trække 5 fra – og står der −5, skal du lægge 5 til.',
+  'lig-sign-op':
+    'Gør det modsatte: står der +5 sammen med x, skal du trække 5 fra – og står der −5, skal du lægge 5 til.',
   'lig-move-sign':
     'Når et tal "flyttes over" på den anden side, skifter det fortegn – for du trækker det fra (eller lægger det til) på begge sider.',
   'lig-sub-coef': '3x betyder 3 · x. Det modsatte af at gange med 3 er at dividere med 3 – ikke at trække 3 fra.',
-  'lig-sub-denom': 'x/3 betyder x : 3. Det modsatte af at dividere med 3 er at gange med 3 – ikke at lægge 3 til eller trække 3 fra.',
+  'lig-sub-denom':
+    'x/3 betyder x : 3. Det modsatte af at dividere med 3 er at gange med 3 – ikke at lægge 3 til eller trække 3 fra.',
   'lig-mul-instead': 'Du har ganget, hvor du skulle dividere. Det modsatte af · 3 er : 3.',
   'lig-div-instead': 'Du har divideret, hvor du skulle gange. Det modsatte af : 3 er · 3.',
   'lig-one-side': 'Det, du gør, skal gøres på begge sider af lighedstegnet – også på den side, hvor der ikke står x.',

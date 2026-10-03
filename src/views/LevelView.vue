@@ -32,10 +32,16 @@ const puzzles = computed(() => puzzlesForLevel(props.level))
     </header>
 
     <template v-if="info && puzzles.length">
-      <p class="desc">{{ info.description }} <span class="example">Fx {{ info.example }}</span></p>
+      <p class="desc">
+        {{ info.description }} <span class="example">Fx {{ info.example }}</span>
+      </p>
       <ol class="puzzles">
         <li v-for="p in puzzles" :key="p.id">
-          <RouterLink :to="{ name: 'game', params: { id: p.id } }" class="puzzle" :class="{ done: progress.stars[p.id] }">
+          <RouterLink
+            :to="{ name: 'game', params: { id: p.id } }"
+            class="puzzle"
+            :class="{ done: progress.stars[p.id] }"
+          >
             <span class="no">{{ p.index }}</span>
             <StarRow :stars="progress.stars[p.id] ?? 0" />
           </RouterLink>

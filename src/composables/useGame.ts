@@ -1,7 +1,14 @@
 import { computed, reactive, ref } from 'vue'
 import { blankKeys, evaluateBoard, tokenKey, type Board, type BoardResult } from '../engine/evaluate'
 import { pequals, tokenPoly, valueText, type Tile } from '../engine/value'
-import { explainSteps, findHintTarget, solutionValues, starsFor, substitutionHint, type HintTarget } from '../engine/hints'
+import {
+  explainSteps,
+  findHintTarget,
+  solutionValues,
+  starsFor,
+  substitutionHint,
+  type HintTarget,
+} from '../engine/hints'
 import {
   evaluateLadder,
   ladderBlankKeys,
@@ -211,7 +218,9 @@ export function useGame(puzzle: GamePuzzle) {
     smallHints.value++
     hintTarget.value = target
     hintSteps.value = rules.explain(target)
-    hintTitle.value = isLadder(puzzle) ? 'Mellemregning for det markerede trin' : 'Mellemregning for den markerede ligning'
+    hintTitle.value = isLadder(puzzle)
+      ? 'Mellemregning for det markerede trin'
+      : 'Mellemregning for den markerede ligning'
   }
 
   /** Kun algebra: "Indsæt et tal" – hvad skal det manglende udtryk give for et bestemt x? */

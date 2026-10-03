@@ -109,7 +109,12 @@ export function evaluateLadder(p: LadderPuzzle, board: Board): BoardResult {
         ? p.traps
             .filter((t) => {
               const tile = board[t.cell]
-              return t.step === i && tile !== null && tile !== undefined && tokenKey(p.tiles[tile]) === tokenKey(p.tiles[t.tile])
+              return (
+                t.step === i &&
+                tile !== null &&
+                tile !== undefined &&
+                tokenKey(p.tiles[tile]) === tokenKey(p.tiles[t.tile])
+              )
             })
             .map((t) => ({ cell: t.cell, kind: t.kind }))
         : []
@@ -234,8 +239,10 @@ export function ladderExplain(p: LadderPuzzle, target: HintTarget): string[] {
   const left = target.cell[0] === 'L'
   const before = truth.get(left ? leftKey(i) : rightKey(i)) as ExprToken
   const lines = [`Regn ${left ? 'venstre' : 'højre'} side ud:  ${wrapped(before)} ${spaced(step)}`]
-  if (before.k !== undefined && step.op === ':') lines.push(`Parentesen er ganget med ${before.k}, så : ${before.k} fjerner tallet foran.`)
-  else if (before.d !== undefined && step.op === '*') lines.push(`Udtrykket er divideret med ${before.d}, så · ${before.d} fjerner brøkstregen.`)
+  if (before.k !== undefined && step.op === ':')
+    lines.push(`Parentesen er ganget med ${before.k}, så : ${before.k} fjerner tallet foran.`)
+  else if (before.d !== undefined && step.op === '*')
+    lines.push(`Udtrykket er divideret med ${before.d}, så · ${before.d} fjerner brøkstregen.`)
   else if (termCount(before.c) > 1 && (step.op === '+' || step.op === '-')) {
     lines.push('Saml ensartede led: x-led for sig og tal for sig.')
   }
