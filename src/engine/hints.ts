@@ -118,7 +118,8 @@ export function explainSteps(puzzle: Puzzle, target: HintTarget, level: LevelInf
     if (pos === 0) [op, p, q] = [inverse[eq.op], c, b]
     else if (eq.op === '+' || eq.op === '*') [op, p, q] = [inverse[eq.op], c, a]
     else [op, p, q] = [eq.op, a, c]
-    const show = (f: Frac) => (level.form === 'dec' ? decimalText(f) : paren(f, level.form === 'mixed' ? 'mixed' : 'frac'))
+    const show = (f: Frac) =>
+      level.form === 'dec' ? decimalText(f) : paren(f, level.form === 'mixed' ? 'mixed' : 'frac')
     // Hele tal: kun det højre led får parentes, fx −16 − (−8).
     const left = level.topic === 'hele' ? signed(p.n) : show(p)
     lines.push(`Omskriv, så ? står alene:  ? = ${left} ${OP_SYMBOL[op]} ${show(q)}`)
@@ -148,9 +149,7 @@ export function explainSteps(puzzle: Puzzle, target: HintTarget, level: LevelInf
         const pn = p.n * (d / p.d)
         const qn = q.n * (d / q.d)
         lines.push(`Find fællesnævneren: ${d}`)
-        const expand = [p, q]
-          .filter((f) => f.d !== d)
-          .map((f) => `${fracText(f)} = ${signed(f.n * (d / f.d))}/${d}`)
+        const expand = [p, q].filter((f) => f.d !== d).map((f) => `${fracText(f)} = ${signed(f.n * (d / f.d))}/${d}`)
         lines.push(`Forlæng:  ${expand.join('  og  ')}`)
         lines.push(`${verb}:  ${num(pn)} ${OP_SYMBOL[op]} ${num(qn)}  – nævneren er ${d}`)
       }
@@ -173,7 +172,11 @@ export function explainSteps(puzzle: Puzzle, target: HintTarget, level: LevelInf
     }
   }
 
-  lines.push(level.form === 'mixed' ? 'Forkort til sidst – og skriv som blandet tal, hvis tallet er større end 1.' : 'Forkort til sidst, hvis du kan.')
+  lines.push(
+    level.form === 'mixed'
+      ? 'Forkort til sidst – og skriv som blandet tal, hvis tallet er større end 1.'
+      : 'Forkort til sidst, hvis du kan.',
+  )
   return lines
 }
 
@@ -198,7 +201,9 @@ function additionSteps(p: number, q: number): string[] {
   const round = [p, q].find((n) => n % 10 === 0)
   if (round !== undefined) {
     const other = round === p ? q : p
-    return [`${round} er hele tiere, så kun tierne ændrer sig:  ${tens(other)} + ${round} – enerne er stadig ${other % 10}.`]
+    return [
+      `${round} er hele tiere, så kun tierne ændrer sig:  ${tens(other)} + ${round} – enerne er stadig ${other % 10}.`,
+    ]
   }
   const carry = 'Giver det 10 eller mere, går der 1 i mente over til tierne.'
   return [
@@ -260,11 +265,7 @@ export function integerSteps(op: Op, p: number, q: number): string[] {
         lines.push(`Hvilket tal ganget med ${abs(q)} giver ${abs(p)}? Brug gangetabellen.`)
       }
       if (p < 0 || q < 0) {
-        lines.push(
-          p < 0 && q < 0
-            ? 'Fortegn: minus og minus giver plus.'
-            : 'Fortegn: plus og minus giver minus.',
-        )
+        lines.push(p < 0 && q < 0 ? 'Fortegn: minus og minus giver plus.' : 'Fortegn: plus og minus giver minus.')
       }
       return lines
     }
@@ -304,7 +305,10 @@ function decimalSteps(op: Op, p: Frac, q: Frac): string[] {
         `Tæl decimalerne: ${kp} + ${kq} = ${kp + kq}. Så mange decimaler skal svaret have (nuller til sidst kan fjernes bagefter).`,
       ]
     case ':':
-      if (kq === 0) return [`Divider som med hele tal:  ${decimalText(p)} : ${decimalText(q)}. Kommaet i svaret står over kommaet i ${decimalText(p)}.`]
+      if (kq === 0)
+        return [
+          `Divider som med hele tal:  ${decimalText(p)} : ${decimalText(q)}. Kommaet i svaret står over kommaet i ${decimalText(p)}.`,
+        ]
       return [
         `Gang begge tal med ${10 ** kq}, så du dividerer med et helt tal:  ${decimalText(mul(p, frac(10 ** kq)))} : ${decimalText(mul(q, frac(10 ** kq)))}`,
       ]
@@ -318,7 +322,10 @@ function percentSteps(unknown: 0 | 1 | 2, p: Frac, whole: Frac, part: Frac): str
   const pct = tokenText(token(p, 'pct'))
   if (unknown === 2) return [`${pct} = ${decimalText(p)}`, `Delen = ${decimalText(p)} · ${decimalText(whole)}`]
   if (unknown === 1) {
-    return [`${pct} = ${decimalText(p)}`, `Det hele = delen : ${decimalText(p)}  →  ${decimalText(part)} : ${decimalText(p)}`]
+    return [
+      `${pct} = ${decimalText(p)}`,
+      `Det hele = delen : ${decimalText(p)}  →  ${decimalText(part)} : ${decimalText(p)}`,
+    ]
   }
   return [
     `Procenten = delen : det hele  →  ${decimalText(part)} : ${decimalText(whole)}`,

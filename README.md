@@ -16,15 +16,16 @@ npm run dev        # udviklingsserver
 npm test           # tests af motoren og af alle baner
 npm run build      # statiske filer i dist/ – kan lægges på enhver webserver
 npm run generate   # lav banerne igen (src/data/puzzles.json)
+npm run format     # formatér koden med Prettier (CI tjekker med npm run format:check)
 ```
 
 ## CI
 
 `.github/workflows/ci.yml` kører ved hvert push til `main` og ved hver pull request. Den:
 
-- installerer, typetjekker og kører tests,
+- installerer, tjekker formateringen (Prettier), typetjekker og kører tests,
 - tjekker, at `src/data/puzzles.json` passer til generatoren,
-- bygger og gemmer `dist/` som en zip (under *Artifacts* på workflow-kørslen, gemmes i 30 dage).
+- bygger og gemmer `dist/` som en zip (under _Artifacts_ på workflow-kørslen, gemmes i 30 dage).
 
 Zip-filen indeholder `index.html`, `.htaccess` og `assets/` direkte i roden og kan pakkes ud på webserveren, som den er.
 
@@ -57,9 +58,9 @@ Versionsnummeret vises nederst på alle sider:
 
 Releases laves **kun på GitHub**:
 
-1. *Releases → Draft a new release*.
-2. Skriv et nyt tag, fx `v0.2.0`, og vælg `main` som *target*.
-3. Tryk evt. *Generate release notes* og derefter *Publish release*.
+1. _Releases → Draft a new release_.
+2. Skriv et nyt tag, fx `v0.2.0`, og vælg `main` som _target_.
+3. Tryk evt. _Generate release notes_ og derefter _Publish release_.
 
 Det starter `.github/workflows/release.yml`. Først tjekker den:
 
@@ -80,10 +81,10 @@ Tags, der pushes fra kommandolinjen, laver ikke en release.
 
 Tommelfingerregel for versionsnumre:
 
-| Del | Hvornår |
-|---|---|
-| **patch** | rettelser |
-| **minor** | nye niveauer eller emner |
+| Del       | Hvornår                                                        |
+| --------- | -------------------------------------------------------------- |
+| **patch** | rettelser                                                      |
+| **minor** | nye niveauer eller emner                                       |
 | **major** | ændringer, der fx gør gemte stjerner ugyldige (nye bane-id'er) |
 
 ## Gameplay
@@ -92,7 +93,7 @@ Tommelfingerregel for versionsnumre:
 - Brikkerne lægges ved at trække dem eller ved at trykke på en brik og derefter på et felt.
 - **Fælde-brikker** er de svar, man får ved typiske fejl (fx `1/2 + 1/3 = 2/5`). På de lave niveauer forklarer spillet fejlen.
 - **Tjek** virker, når alle felter er udfyldt. Hvad et tjek afslører, afhænger af niveauet:
-  - de lette niveauer (hele tal 1–3, brøker 1–2, decimaltal 1–2, algebra 1–2): hvilke ligninger der er forkerte, plus en forklaring på fejlen
+  - de lette niveauer (hele tal 1–3, brøker 1–2, decimaltal 1–2, ligninger 1–3, algebra 1–2): hvilke ligninger der er forkerte, plus en forklaring på fejlen
   - de øvrige niveauer: hvilke ligninger der er forkerte
   - (mulighed til svære niveauer senere: kun hvor mange ligninger der er forkerte)
   - Uanset niveau vises det, hvis en brik har den rigtige værdi, men står på den forkerte form.
@@ -109,52 +110,66 @@ Spillet er delt op i emner. Hvert emne har sine egne niveauer.
 
 **Hele tal** (bane-id'er `H1-01` osv.) – alle tal på brættet og på brikkerne er mellem −99 og 99 (aldrig 0, 1 eller −1). Banerne er større end i de andre emner (5–9 ligninger).
 
-| Niveau | Indhold | Typiske fejl som fælder |
-|---|---|---|
-| 1 | `+` og `−` – mindst to stykker med mente eller lån | `47 + 38 = 75` (glemt mente), `52 − 27 = 35` (mindste ciffer fra største) |
-| 2 | `·` og `:` – den lille tabel, division går op | nabotallet i tabellen: `7 · 8 = 48`, `56 : 8 = 6` |
-| 3 | Alle fire regnearter | som 1 og 2 |
-| 4 | Negative tal, alle fire regnearter | `4 − (−3) = 1`, `−3 + 5 = −8`, `−4 · 6 = 24`, `5 − 8 = 3` |
-| 5 | Store baner med ekstra tomme felter, som kun kan løses ved at se på brikkerne | som 4 |
+| Niveau | Indhold                                                                       | Typiske fejl som fælder                                                   |
+| ------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 1      | `+` og `−` – mindst to stykker med mente eller lån                            | `47 + 38 = 75` (glemt mente), `52 − 27 = 35` (mindste ciffer fra største) |
+| 2      | `·` og `:` – den lille tabel, division går op                                 | nabotallet i tabellen: `7 · 8 = 48`, `56 : 8 = 6`                         |
+| 3      | Alle fire regnearter                                                          | som 1 og 2                                                                |
+| 4      | Negative tal, alle fire regnearter                                            | `4 − (−3) = 1`, `−3 + 5 = −8`, `−4 · 6 = 24`, `5 − 8 = 3`                 |
+| 5      | Store baner med ekstra tomme felter, som kun kan løses ved at se på brikkerne | som 4                                                                     |
 
 - Et negativt tal efter et regnetegn står i parentes på brættet, fx `5 − (−3)`.
 - Mellemregningen viser fx ener og tiere for sig, lån, gangetabellen og fortegnsreglerne – uden at give svaret.
 
 **Brøker**
 
-| Niveau | Indhold |
-|---|---|
-| 1 | `+` og `−` med samme nævner |
-| 2 | `+` og `−` med forskellige nævnere |
-| 3 | `·` og `:`, også helt tal · brøk |
-| 4 | Blandede tal |
-| 5 | Negative brøker, alle fire regnearter |
+| Niveau | Indhold                               |
+| ------ | ------------------------------------- |
+| 1      | `+` og `−` med samme nævner           |
+| 2      | `+` og `−` med forskellige nævnere    |
+| 3      | `·` og `:`, også helt tal · brøk      |
+| 4      | Blandede tal                          |
+| 5      | Negative brøker, alle fire regnearter |
 
 **Decimaltal og procent** (bane-id'er `P1-01` osv.)
 
-| Niveau | Indhold | Typiske fejl som fælder |
-|---|---|---|
-| 1 | Decimaltal `+` og `−` | `0,7 + 0,25 = 0,32` (ikke komma under komma) |
-| 2 | Decimaltal `·` og `:` | kommaet forkert: `0,5 · 0,4 = 2` eller `0,02` |
-| 3 | Procent af et tal (`25 % af 80 = 20`) – find delen, procenten eller det hele | `80 + 25`, `20 : 80 = 0,25 %`, `0,25` i stedet for `25 %` |
+| Niveau | Indhold                                                                      | Typiske fejl som fælder                                   |
+| ------ | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
+| 1      | Decimaltal `+` og `−`                                                        | `0,7 + 0,25 = 0,32` (ikke komma under komma)              |
+| 2      | Decimaltal `·` og `:`                                                        | kommaet forkert: `0,5 · 0,4 = 2` eller `0,02`             |
+| 3      | Procent af et tal (`25 % af 80 = 20`) – find delen, procenten eller det hele | `80 + 25`, `20 : 80 = 0,25 %`, `0,25` i stedet for `25 %` |
 
 På decimal- og procentniveauerne har hvert felt en fast skriveform. Procenter skal skrives med %, og alle andre tal skal skrives som decimaltal. En brik med den rigtige værdi, men i den forkerte form, tæller som forkert.
 
 **Algebra** (bane-id'er `A1-01` osv.) – brikkerne er udtryk i x, og `=` betyder, at udtrykkene er ens for alle x.
 
-| Niveau | Indhold | Typiske fejl som fælder |
-|---|---|---|
-| 1 | Saml led (`2x + 3x`) | `5x²`, `x + 3 = 4x` |
-| 2 | Gange og dividere led (`2x · 3x`, `6x² : 2x`) | `6x`, `5x²`, `3x²` |
-| 3 | Parenteser: gange ind, minusparentes, sæt uden for parentes | `3x + 2`, `4x − 1`, `2x + 9` |
-| 4 | To parenteser og kvadratsætninger | `x² + 9`, `x² + 4` |
+| Niveau | Indhold                                                     | Typiske fejl som fælder      |
+| ------ | ----------------------------------------------------------- | ---------------------------- |
+| 1      | Saml led (`2x + 3x`)                                        | `5x²`, `x + 3 = 4x`          |
+| 2      | Gange og dividere led (`2x · 3x`, `6x² : 2x`)               | `6x`, `5x²`, `3x²`           |
+| 3      | Parenteser: gange ind, minusparentes, sæt uden for parentes | `3x + 2`, `4x − 1`, `2x + 9` |
+| 4      | To parenteser og kvadratsætninger                           | `x² + 9`, `x² + 4`           |
 
 - Kun variablen x, hele koefficienter, højst grad 2.
 - Parenteser tegnes af feltet: et udtryk med flere led får parentes, når det står i et gange- eller divisionsstykke eller efter et minus. Brikkerne selv har ingen parenteser.
 - Ekstra hint på algebra: **Indsæt et tal**. Det viser, hvad de kendte udtryk giver for et bestemt x, og hvad det manglende udtryk derfor skal give. x vælges, så kun den rigtige brik passer. Hintet koster en stjerne som de andre.
 - Når det ukendte er et led i et gangestykke (`3 · ? = 6x + 9`), øver eleven at sætte uden for parentes.
 
-Ligningsløsning kommer senere som en anden spilmekanik.
+**Ligninger** (bane-id'er `L1-01` osv.) – en anden spilmekanik: **ligningstrappen**. Ligningen står øverst, og eleven løser den trin for trin. I hvert trin lægger eleven en operation (fx `−5`, `: 3`, `−2x`) i den stiplede boks og derefter det, der så står på hver side, i rækken under. Nederst står `x = ?`. Emnet ligger før algebra.
+
+| Niveau | Indhold                                               | Typiske fejl som fælder                                                           |
+| ------ | ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 1      | `x + a = b`, `x − a = b` (ét trin)                    | `x + 5 = 12`: `+5` (samme regnetegn), `x = 17` (5 flyttet uden at skifte fortegn) |
+| 2      | `ax = b`, `x/a = b` (ét trin)                         | `−3` i stedet for `: 3`, gange/dividere byttet om                                 |
+| 3      | `ax + b = c` (to trin)                                | som 1 og 2                                                                        |
+| 4      | x på begge sider, `ax + b = cx + d` (tre trin)        | `+2x` i stedet for `−2x`, operationen kun på den ene side                         |
+| 5      | Parenteser og brøker: `a(x + b) = c`, `(x + b)/a = c` | som ovenfor                                                                       |
+
+- Et trin er rigtigt, når operationen er udført korrekt på begge sider – sat sammen med rækken under. Tjek markerer de forkerte trin.
+- Løsningerne er hele tal. På niveau 1–3 er alle tal positive, fra niveau 4 kan x være negativ.
+- Når ligningen er løst, vises prøven: x sat ind i den oprindelige ligning, fx `Prøve: 3 · 5 + 5 = 20 ✓`.
+- Hints: "Hvor starter jeg?" markerer det næste trin, og "Vis mellemregning" forklarer, hvad der skal fjernes, eller hvad der skal regnes ud på hver side.
+- Udskrift virker også: trappen står med tomme felter og brikkerne under.
 
 ## Struktur
 
@@ -164,6 +179,8 @@ src/engine/        Ren TypeScript – ingen Vue. Kan testes for sig.
   value.ts         Brikker (tal eller udtryk) og polynomieregning – tjek og løser regner på polynomier
   algebra.ts       Algebra: typiske fejl, mellemregninger og hintet "Indsæt et tal"
   algebraGenerator.ts  Banegenerator til algebra
+  ladder.ts        Ligningstrappen: tjek af trin, løser, hints og prøve
+  ladderGenerator.ts  Banegenerator til ligninger
   levels.ts        Emner og niveauer med deres regler (forkortning, feedback-type …)
   evaluate.ts      Tjek af brættet
   solver.ts        Løser: entydig løsning? kan den løses skridt for skridt?
@@ -193,3 +210,4 @@ Banerne laves af et script, og scriptet tjekker hver bane:
   Stjerner gemt før sorteringen flyttes automatisk med over på samme bane (`formerId`, se `src/progress.ts`).
 
 Alt dette tjekkes igen i `src/engine/puzzles.test.ts`.
+Ligningerne tjekkes på samme måde (én løsning, fælderne er forkerte, tallene er hele og højst 99) i `src/engine/ladder.test.ts`.

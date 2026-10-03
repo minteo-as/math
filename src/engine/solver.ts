@@ -58,7 +58,8 @@ export function findSolutions(puzzle: Puzzle, level: LevelInfo, limit = 2): Reco
   }
   const usable = puzzle.tiles.map((t, i) => ({ i, key: tokenKey(t), value: tokenPoly(t) }))
   /** Må brikken ligge i feltet? (Kun brikker på den rigtige skriveform tæller som løsning.) */
-  const fits = (tile: number, key: CellKey) => formIssue(puzzle.tiles[tile], level, expectedForm(cells.get(key))) === null
+  const fits = (tile: number, key: CellKey) =>
+    formIssue(puzzle.tiles[tile], level, expectedForm(cells.get(key))) === null
   const used = new Set<number>()
   const assignment: Record<CellKey, number> = {}
   const solutions: Record<CellKey, number>[] = []

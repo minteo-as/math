@@ -2,10 +2,11 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import FractionView from '../components/FractionView.vue'
+import LadderBoard from '../components/LadderBoard.vue'
 import PuzzleGrid from '../components/PuzzleGrid.vue'
 import { LEVELS, levelInfo, ruleText, topicInfo } from '../engine/levels'
 import type { CellKey } from '../engine/types'
-import { puzzleById, puzzlesForLevel } from '../puzzles'
+import { isLadder, puzzleById, puzzlesForLevel } from '../puzzles'
 
 /**
  * `target` er enten en bane ("H3-05") eller et helt niveau ("H3").
@@ -28,9 +29,11 @@ const back = single
   : { name: 'level', params: { level: levelCode ?? '' } }
 
 const instruction = computed(() =>
-  level?.form === 'expr'
-    ? 'Skriv udtrykkene fra boksen i de tomme felter, så alle regnestykker går op – både vandret og lodret. Ikke alle udtryk skal bruges.'
-    : 'Skriv tallene fra boksen i de tomme felter, så alle regnestykker går op – både vandret og lodret. Ikke alle tal skal bruges.',
+  level?.form === 'ladder'
+    ? 'Skriv i den stiplede boks, hvad du gør på begge sider, og skriv på rækken under, hvad der så står på hver side. Brug brikkerne fra boksen – ikke alle skal bruges.'
+    : level?.form === 'expr'
+      ? 'Skriv udtrykkene fra boksen i de tomme felter, så alle regnestykker går op – både vandret og lodret. Ikke alle udtryk skal bruges.'
+      : 'Skriv tallene fra boksen i de tomme felter, så alle regnestykker går op – både vandret og lodret. Ikke alle tal skal bruges.',
 )
 
 // Titlen bliver filnavnet, hvis man "udskriver" til PDF.
@@ -79,7 +82,19 @@ function print() {
         <p class="instruction">{{ instruction }}</p>
         <p v-if="ruleText(level, p)" class="instruction">{{ ruleText(level, p) }}</p>
         <div class="board">
+          <LadderBoard
+            v-if="isLadder(p)"
+            :puzzle="p"
+            :board="{}"
+            :locked="noCells"
+            :wrong-equations="[]"
+            :hint-equation="null"
+            :hint-cell="null"
+            :solved="false"
+            :can-drop="false"
+          />
           <PuzzleGrid
+            v-else
             :puzzle="p"
             :board="{}"
             :locked="noCells"
@@ -96,7 +111,6 @@ function print() {
           <span v-for="(t, i) in p.tiles" :key="i" class="tile"><FractionView :value="t" :fit="false" /></span>
         </div>
       </section>
-
     </template>
   </div>
 </template>

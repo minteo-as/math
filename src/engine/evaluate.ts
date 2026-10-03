@@ -1,5 +1,5 @@
 import { frac, isReduced, token, type Form, type Frac, type NumToken } from './fraction'
-import { isExpr, papply, pequals, tokenPoly, type Token } from './value'
+import { isExpr, isStep, papply, pequals, tokenPoly, type Tile, type Token } from './value'
 import type { LevelInfo } from './levels'
 import type { CellKey, Equation, MisconceptionKind, Puzzle, PuzzleCell } from './types'
 import { cellKey } from './types'
@@ -11,8 +11,10 @@ export function tokenValue(t: NumToken): Frac {
   return frac(t.n, t.d)
 }
 
-export function tokenKey(t: Token): string {
-  return isExpr(t) ? `x:${t.c.join(',')}` : `${t.n}/${t.d}/${t.form}`
+export function tokenKey(t: Tile): string {
+  if (isStep(t)) return `s:${t.op}${t.c.join(',')}`
+  if (isExpr(t)) return `x:${t.c.join(',')}${t.k === undefined ? '' : `|k${t.k}`}${t.d === undefined ? '' : `|d${t.d}`}`
+  return `${t.n}/${t.d}/${t.form}`
 }
 
 export type FormIssue = 'not-reduced' | 'improper' | 'as-percent' | 'as-decimal'

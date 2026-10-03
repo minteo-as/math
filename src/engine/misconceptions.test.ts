@@ -53,7 +53,9 @@ describe('typiske fejl med decimaltal og procent', () => {
 
   it('procent af', () => {
     const texts = (u: 0 | 1 | 2) =>
-      Object.fromEntries(percentTrapCandidates(u, frac(1, 4), frac(80), frac(20)).map((t) => [t.kind, tokenText(t.value)]))
+      Object.fromEntries(
+        percentTrapCandidates(u, frac(1, 4), frac(80), frac(20)).map((t) => [t.kind, tokenText(t.value)]),
+      )
     expect(texts(2)).toEqual({ 'pct-add': '105', 'pct-divide': '3,2' })
     expect(texts(0)).toEqual({ 'pct-no-100': '0,25\u202F%', 'pct-flip': '400\u202F%' })
     expect(texts(1)).toEqual({ 'pct-mul-instead': '5' })

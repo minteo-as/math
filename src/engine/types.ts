@@ -1,5 +1,5 @@
 import type { Form, Op } from './fraction'
-import type { Token } from './value'
+import type { ExprToken, StepToken, Tile, Token } from './value'
 
 /** Nøgle for et felt i gitteret: "række,kolonne". */
 export type CellKey = string
@@ -64,6 +64,14 @@ export type MisconceptionKind =
   | 'int-neg-sub'
   | 'int-minus-neg'
   | 'int-sign-mul'
+  | 'lig-sign-op'
+  | 'lig-move-sign'
+  | 'lig-sub-coef'
+  | 'lig-sub-denom'
+  | 'lig-mul-instead'
+  | 'lig-div-instead'
+  | 'lig-one-side'
+  | 'lig-x-sign'
 
 /** En fælde-brik: svaret man får ved en typisk fejl i en bestemt ligning. */
 export interface Trap {
@@ -75,6 +83,8 @@ export interface Trap {
 }
 
 export interface Puzzle {
+  /** Krydsbane (feltet mangler i data – kun til at skelne fra ligningstrapper i kode). */
+  kind?: 'cross'
   /** Fx "3-07" = niveau 3, bane 7, eller "P2-07". */
   id: string
   /**
@@ -96,7 +106,44 @@ export interface Puzzle {
   traps: Trap[]
 }
 
+// ---------- Ligninger: ligningstrappen ----------
+
+/** Et felt i trappen: givet på forhånd eller tomt (skal udfyldes med en brik). */
+export type LadderSlot<T extends Tile = Tile> = { kind: 'given'; value: T } | { kind: 'blank' }
+
+/**
+ * Hvorfor trinnet gøres – bruges i hints:
+ *  - konstant:    fjern et tal, der er lagt til eller trukket fra x (x + 5 → −5)
+ *  - koefficient: x er ganget med et tal (3x → : 3)
+ *  - naevner:     x er divideret med et tal (x/3 → · 3)
+ *  - xled:        x på begge sider – fjern x-leddet på højre side (−2x)
+ *  - parentes:    hele parentesen er ganget med et tal (2(x + 3) → : 2)
+ */
+export type LadderStepWhy = 'konstant' | 'koefficient' | 'naevner' | 'xled' | 'parentes'
+
+/**
+ * En ligning, der løses trin for trin. Hver række er den samme ligning, bare enklere;
+ * mellem rækkerne står operationen, der gøres på begge sider.
+ * Feltnøgler: "L0", "R0" (venstre/højre side i række 0), "S0" (trinnet mellem række 0 og 1) …
+ */
+export interface LadderPuzzle {
+  kind: 'ladder'
+  id: string
+  formerId?: string
+  index: number
+  level: string
+  rows: { left: LadderSlot<ExprToken>; right: LadderSlot<ExprToken> }[]
+  steps: { slot: LadderSlot<StepToken>; why: LadderStepWhy }[]
+  tiles: (ExprToken | StepToken)[]
+  /** Felt → brik-indeks. */
+  solution: Record<CellKey, number>
+  traps: { tile: number; step: number; cell: CellKey; kind: MisconceptionKind }[]
+  /** Løsningen (x-værdien). */
+  x: number
+}
+
 export interface PuzzleFile {
   version: number
   puzzles: Puzzle[]
+  ladders: LadderPuzzle[]
 }

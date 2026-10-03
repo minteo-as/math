@@ -29,7 +29,8 @@ export function nearestInDirection(points: Point[], from: number, dir: Direction
     if (i === from) return
     const dx = b.x - a.x
     const dy = b.y - a.y
-    const [along, across] = dir === 'left' ? [-dx, dy] : dir === 'right' ? [dx, dy] : dir === 'up' ? [-dy, dx] : [dy, dx]
+    const [along, across] =
+      dir === 'left' ? [-dx, dy] : dir === 'right' ? [dx, dy] : dir === 'up' ? [-dy, dx] : [dy, dx]
     // Kun det, der ligger foran (lidt tolerance, så elementer på samme linje ikke tæller).
     if (along <= 2) return
     const score = along + 2 * Math.abs(across)

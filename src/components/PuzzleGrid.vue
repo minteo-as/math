@@ -37,9 +37,7 @@ const emit = defineEmits<{
 const gridEl = ref<HTMLElement | null>(null)
 const active = ref<CellKey | null>(null)
 
-const blankKeys = computed(() =>
-  props.puzzle.cells.filter((c) => c.kind === 'blank').map((c) => cellKey(c.r, c.c)),
-)
+const blankKeys = computed(() => props.puzzle.cells.filter((c) => c.kind === 'blank').map((c) => cellKey(c.r, c.c)))
 /** Det felt, Tab lander på. */
 const tabCell = computed(() =>
   active.value && blankKeys.value.includes(active.value) ? active.value : blankKeys.value[0],
@@ -104,11 +102,15 @@ const parenCells = computed(() => {
 
 /** Hele tal: negative tal efter et regnetegn står i parentes, fx 5 − (−3). */
 const negParenCells = computed(() =>
-  levelInfo(props.puzzle.level).topic === 'hele' ? new Set(props.puzzle.equations.map((eq) => eq.nums[1])) : new Set<CellKey>(),
+  levelInfo(props.puzzle.level).topic === 'hele'
+    ? new Set(props.puzzle.equations.map((eq) => eq.nums[1]))
+    : new Set<CellKey>(),
 )
 
 const wrongCells = computed(() => new Set(props.wrongEquations.flatMap((i) => props.puzzle.equations[i].cells)))
-const hintCells = computed(() => new Set(props.hintEquation === null ? [] : props.puzzle.equations[props.hintEquation].cells))
+const hintCells = computed(
+  () => new Set(props.hintEquation === null ? [] : props.puzzle.equations[props.hintEquation].cells),
+)
 
 const cells = computed(() =>
   props.puzzle.cells.map((cell) => {

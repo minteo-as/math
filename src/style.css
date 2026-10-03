@@ -31,7 +31,12 @@
   --star-off: #d5dae3;
 
   color-scheme: light dark;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   color: var(--ink);
   -webkit-text-size-adjust: 100%;
 }

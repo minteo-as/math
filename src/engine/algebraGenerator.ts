@@ -134,7 +134,11 @@ function fillValues(layout: Layout, ops: Op[], gen: AlgebraGen, rng: Rng): Map<C
     if (forcedIndex >= 0) {
       const eq = layout.equations[forcedIndex]
       const pos = eq.nums.findIndex((k) => !values.has(k)) as 0 | 1 | 2
-      const known = eq.nums.map((k) => (values.has(k) ? poly(values.get(k)!) : null)) as [Poly | null, Poly | null, Poly | null]
+      const known = eq.nums.map((k) => (values.has(k) ? poly(values.get(k)!) : null)) as [
+        Poly | null,
+        Poly | null,
+        Poly | null,
+      ]
       const value = accepted(solveForPoly(ops[forcedIndex], pos, known), gen)
       if (!value) return null
       values.set(eq.nums[pos], value)
@@ -294,4 +298,3 @@ export function generateAlgebraLevel(code: string, count: number, baseSeed: numb
   }
   return puzzles
 }
-

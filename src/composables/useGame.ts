@@ -1,22 +1,90 @@
 import { computed, reactive, ref } from 'vue'
 import { blankKeys, evaluateBoard, tokenKey, type Board, type BoardResult } from '../engine/evaluate'
-import { pequals, tokenPoly, valueText } from '../engine/value'
-import { explainSteps, findHintTarget, solutionValues, starsFor, substitutionHint, type HintTarget } from '../engine/hints'
-import { levelInfo } from '../engine/levels'
+import { pequals, tokenPoly, valueText, type Tile } from '../engine/value'
+import {
+  explainSteps,
+  findHintTarget,
+  solutionValues,
+  starsFor,
+  substitutionHint,
+  type HintTarget,
+} from '../engine/hints'
+import {
+  evaluateLadder,
+  ladderBlankKeys,
+  ladderExplain,
+  ladderHintTarget,
+  ladderProof,
+  ladderTruth,
+  sameValue,
+} from '../engine/ladder'
+import { levelInfo, type LevelInfo } from '../engine/levels'
 import { MISCONCEPTION_TEXT } from '../engine/misconceptions'
-import type { CellKey, Puzzle } from '../engine/types'
+import type { CellKey, LadderPuzzle, Puzzle } from '../engine/types'
+import { isLadder, type GamePuzzle } from '../puzzles'
 import { recordStars } from '../progress'
 
 export interface Feedback {
   summary: string
-  /** Ligninger der markeres som forkerte (tom i 'count'-tilstand). */
+  /** Ligninger (eller trin) der markeres som forkerte (tom i 'count'-tilstand). */
   wrongEquations: number[]
   messages: string[]
 }
 
-export function useGame(puzzle: Puzzle) {
+/** Det, der er forskelligt for krydsbaner og ligningstrapper. Resten af spillet er det samme. */
+interface Rules {
+  tiles: Tile[]
+  blanks: CellKey[]
+  evaluate(board: Board): BoardResult
+  hintTarget(board: Board): HintTarget | null
+  explain(target: HintTarget): string[]
+  substitute(target: HintTarget): string[]
+  /** Brikken, der hører til i feltet. */
+  solutionTile(cell: CellKey): number
+  /** Ligger en brik med den rigtige værdi i feltet? */
+  isRightAt(tile: number, cell: CellKey): boolean
+  /** Prøven, der vises, når banen er løst (kun ligninger). */
+  proof: string | null
+  /** "ligning"/"ligninger" eller "trin"/"trin". */
+  noun: [string, string]
+}
+
+function crossRules(puzzle: Puzzle, level: LevelInfo): Rules {
+  const truth = solutionValues(puzzle)
+  return {
+    tiles: puzzle.tiles,
+    blanks: blankKeys(puzzle),
+    evaluate: (board) => evaluateBoard(puzzle, board, level),
+    hintTarget: (board) => findHintTarget(puzzle, board),
+    explain: (target) => explainSteps(puzzle, target, level),
+    substitute: (target) => substitutionHint(puzzle, target),
+    solutionTile: (cell) => puzzle.solutions[0][cell],
+    isRightAt: (tile, cell) => pequals(tokenPoly(puzzle.tiles[tile]), truth.get(cell)!),
+    proof: null,
+    noun: ['ligning', 'ligninger'],
+  }
+}
+
+function ladderRules(puzzle: LadderPuzzle): Rules {
+  const truth = ladderTruth(puzzle)
+  return {
+    tiles: puzzle.tiles,
+    blanks: ladderBlankKeys(puzzle),
+    evaluate: (board) => evaluateLadder(puzzle, board),
+    hintTarget: (board) => ladderHintTarget(puzzle, board),
+    explain: (target) => ladderExplain(puzzle, target),
+    substitute: () => [],
+    solutionTile: (cell) => puzzle.solution[cell],
+    isRightAt: (tile, cell) => sameValue(puzzle.tiles[tile], truth.get(cell)!),
+    proof: ladderProof(puzzle),
+    noun: ['trin', 'trin'],
+  }
+}
+
+export function useGame(puzzle: GamePuzzle) {
   const level = levelInfo(puzzle.level)
-  const blanks = blankKeys(puzzle)
+  const rules = isLadder(puzzle) ? ladderRules(puzzle) : crossRules(puzzle, level)
+  const blanks = rules.blanks
 
   const board = reactive<Board>(Object.fromEntries(blanks.map((k) => [k, null])))
   /** Felter udfyldt af hintet "placér en brik" – kan ikke flyttes. */
@@ -38,7 +106,7 @@ export function useGame(puzzle: Puzzle) {
   const hintTitle = ref('')
 
   const placed = computed(() => new Set(Object.values(board).filter((t): t is number => t !== null)))
-  const bank = computed(() => puzzle.tiles.map((_, i) => i).filter((i) => !placed.value.has(i)))
+  const bank = computed(() => rules.tiles.map((_, i) => i).filter((i) => !placed.value.has(i)))
   const complete = computed(() => blanks.every((k) => board[k] !== null))
 
   function cellOf(tile: number): CellKey | undefined {
@@ -90,7 +158,7 @@ export function useGame(puzzle: Puzzle) {
       notice.value = 'Læg en brik i alle felter, før du tjekker.'
       return
     }
-    const r = evaluateBoard(puzzle, board, level)
+    const r = rules.evaluate(board)
     result.value = r
     if (r.solved) {
       solved.value = true
@@ -110,18 +178,18 @@ export function useGame(puzzle: Puzzle) {
     const formMessages = () => {
       for (const eq of r.equations) {
         for (const issue of eq.formIssues) {
-          const tile = puzzle.tiles[board[issue.cell]!]
+          const tile = rules.tiles[board[issue.cell]!]
           messages.push(`${valueText(tile)}: ${MISCONCEPTION_TEXT[issue.kind]}`)
         }
       }
     }
     if (r.solved) {
       formMessages()
-      return { summary: 'Alle ligninger går op!', wrongEquations: [], messages: unique(messages) }
+      return { summary: `Alle ${rules.noun[1]} går op!`, wrongEquations: [], messages: unique(messages) }
     }
     const wrong = r.equations.flatMap((e, i) => (e.status === 'wrong' ? [i] : []))
     const n = wrong.length
-    const plural = n === 1 ? 'ligning er forkert' : 'ligninger er forkerte'
+    const plural = n === 1 ? `${rules.noun[0]} er forkert` : `${rules.noun[1]} er forkerte`
     if (level.feedback === 'count') {
       return { summary: `${n} ${plural}.`, wrongEquations: [], messages: [] }
     }
@@ -136,7 +204,7 @@ export function useGame(puzzle: Puzzle) {
 
   function hintWhere() {
     if (solved.value) return
-    const target = findHintTarget(puzzle, board)
+    const target = rules.hintTarget(board)
     if (!target) return
     smallHints.value++
     hintTarget.value = target
@@ -145,34 +213,35 @@ export function useGame(puzzle: Puzzle) {
 
   function hintExplain() {
     if (solved.value) return
-    const target = findHintTarget(puzzle, board)
+    const target = rules.hintTarget(board)
     if (!target) return
     smallHints.value++
     hintTarget.value = target
-    hintSteps.value = explainSteps(puzzle, target, level)
-    hintTitle.value = 'Mellemregning for den markerede ligning'
+    hintSteps.value = rules.explain(target)
+    hintTitle.value = isLadder(puzzle)
+      ? 'Mellemregning for det markerede trin'
+      : 'Mellemregning for den markerede ligning'
   }
 
   /** Kun algebra: "Indsæt et tal" – hvad skal det manglende udtryk give for et bestemt x? */
   function hintSubstitute() {
     if (solved.value) return
-    const target = findHintTarget(puzzle, board)
+    const target = rules.hintTarget(board)
     if (!target || !target.single) return
     smallHints.value++
     hintTarget.value = target
-    hintSteps.value = substitutionHint(puzzle, target)
+    hintSteps.value = rules.substitute(target)
     hintTitle.value = 'Sæt et tal ind for x'
   }
 
   function hintPlace() {
     if (solved.value) return
-    const target = findHintTarget(puzzle, board)
+    const target = rules.hintTarget(board)
     if (!target) return
-    const truth = solutionValues(puzzle)
-    const want = puzzle.tiles[puzzle.solutions[0][target.cell]]
-    const isRightAt = (tile: number, cell: CellKey) => pequals(tokenPoly(puzzle.tiles[tile]), truth.get(cell)!)
+    const want = rules.tiles[rules.solutionTile(target.cell)]
+    const isRightAt = rules.isRightAt
     // Find en brik med den rigtige påskrift – helst fra bunken, ellers fra et felt hvor den ligger forkert.
-    const candidates = puzzle.tiles
+    const candidates = rules.tiles
       .map((t, i) => ({ i, key: tokenKey(t) }))
       .filter(({ key }) => key === tokenKey(want))
       .map(({ i }) => i)
@@ -204,6 +273,9 @@ export function useGame(puzzle: Puzzle) {
   return {
     puzzle,
     level,
+    tiles: rules.tiles,
+    proof: rules.proof,
+    isLadder: isLadder(puzzle),
     board,
     locked,
     selected,

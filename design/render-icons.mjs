@@ -41,7 +41,11 @@ const page = await browser.newPage({ viewport: { width: 512, height: 512 } })
 for (const t of targets) {
   const svg = t.svg.replace(/width="512" height="512"/, `width="${t.size}" height="${t.size}"`)
   await page.setContent(`<body style="margin:0;background:transparent">${svg}</body>`)
-  await page.screenshot({ path: `${root}${t.out}`, clip: { x: 0, y: 0, width: t.size, height: t.size }, omitBackground: t.transparent ?? false })
+  await page.screenshot({
+    path: `${root}${t.out}`,
+    clip: { x: 0, y: 0, width: t.size, height: t.size },
+    omitBackground: t.transparent ?? false,
+  })
   console.log(t.out)
 }
 await browser.close()

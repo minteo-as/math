@@ -1,7 +1,7 @@
 /**
  * Emner, niveauer og deres regler – samlet ét sted, så gameplay kan justeres her.
  */
-import type { Puzzle } from './types'
+import type { LadderPuzzle, Puzzle } from './types'
 
 /**
  * Hvad sker der, hvis eleven lægger en brik med den rigtige værdi,
@@ -19,7 +19,7 @@ export type ReduceRule = 'nudge' | 'required'
  */
 export type FeedbackMode = 'explain' | 'equations' | 'count'
 
-export type TopicId = 'hele' | 'broek' | 'procent' | 'algebra'
+export type TopicId = 'hele' | 'broek' | 'procent' | 'ligninger' | 'algebra'
 
 export interface Topic {
   id: TopicId
@@ -42,7 +42,18 @@ export const TOPICS: Topic[] = [
     description: 'Regn med decimaltal, og find procent af et tal.',
     available: true,
   },
-  { id: 'algebra', title: 'Algebra', description: 'Reducer udtryk med x – fra at samle led til kvadratsætninger.', available: true },
+  {
+    id: 'ligninger',
+    title: 'Ligninger',
+    description: 'Løs ligningen trin for trin – gør det samme på begge sider af lighedstegnet.',
+    available: true,
+  },
+  {
+    id: 'algebra',
+    title: 'Algebra',
+    description: 'Reducer udtryk med x – fra at samle led til kvadratsætninger.',
+    available: true,
+  },
 ]
 
 export interface LevelInfo {
@@ -56,8 +67,8 @@ export interface LevelInfo {
   example: string
   available: boolean
   reduce: ReduceRule
-  /** Hvordan tallene skrives: brøk, blandet tal, decimaltal eller algebraiske udtryk. */
-  form: 'frac' | 'mixed' | 'dec' | 'expr'
+  /** Hvordan tallene skrives: brøk, blandet tal, decimaltal, algebraiske udtryk – eller en ligningstrappe. */
+  form: 'frac' | 'mixed' | 'dec' | 'expr' | 'ladder'
   feedback: FeedbackMode
   /** Kan alle baner løses skridt for skridt (én ligning med ét ukendt tal ad gangen)? */
   stepwise: boolean
@@ -234,6 +245,71 @@ export const LEVELS: LevelInfo[] = [
     stepwise: true,
   },
   {
+    code: 'L1',
+    topic: 'ligninger',
+    number: 1,
+    title: 'Ét trin: plus og minus',
+    description: 'Fjern tallet, der står sammen med x.',
+    example: 'x + 7 = 12',
+    available: true,
+    reduce: 'required',
+    form: 'ladder',
+    feedback: 'explain',
+    stepwise: true,
+  },
+  {
+    code: 'L2',
+    topic: 'ligninger',
+    number: 2,
+    title: 'Ét trin: gange og division',
+    description: 'Fjern tallet, x er ganget eller divideret med.',
+    example: '3x = 21',
+    available: true,
+    reduce: 'required',
+    form: 'ladder',
+    feedback: 'explain',
+    stepwise: true,
+  },
+  {
+    code: 'L3',
+    topic: 'ligninger',
+    number: 3,
+    title: 'To trin',
+    description: 'Først tallet, så det x er ganget med.',
+    example: '3x + 5 = 20',
+    available: true,
+    reduce: 'required',
+    form: 'ladder',
+    feedback: 'explain',
+    stepwise: true,
+  },
+  {
+    code: 'L4',
+    topic: 'ligninger',
+    number: 4,
+    title: 'x på begge sider',
+    description: 'Saml x’erne på den ene side først.',
+    example: '5x + 3 = 2x + 12',
+    available: true,
+    reduce: 'required',
+    form: 'ladder',
+    feedback: 'equations',
+    stepwise: true,
+  },
+  {
+    code: 'L5',
+    topic: 'ligninger',
+    number: 5,
+    title: 'Parenteser og brøker',
+    description: 'Gør det modsatte af parentesen eller brøkstregen.',
+    example: '2(x + 3) = 14',
+    available: true,
+    reduce: 'required',
+    form: 'ladder',
+    feedback: 'equations',
+    stepwise: true,
+  },
+  {
     code: 'A1',
     topic: 'algebra',
     number: 1,
@@ -302,14 +378,18 @@ export function topicInfo(id: TopicId): Topic {
 }
 
 /** Den særlige regel for banen, som vises over brættet (tom tekst, hvis der ikke er nogen). */
-export function ruleText(level: LevelInfo, puzzle: Puzzle): string {
+export function ruleText(level: LevelInfo, puzzle: Puzzle | LadderPuzzle): string {
+  if (level.form === 'ladder' || puzzle.kind === 'ladder')
+    return 'Løs ligningen trin for trin. Gør det samme på begge sider.'
   if (level.form === 'expr') return 'Udtrykkene på hver side af = skal være ens – for alle værdier af x.'
   if (level.form === 'dec') {
     const hasPercent = puzzle.equations.some((e) => e.op === 'af')
     return hasPercent ? 'Procenter skrives med %, alle andre tal som decimaltal.' : ''
   }
   if (level.reduce === 'required') {
-    return level.form === 'mixed' ? 'Svar skal være forkortede og skrevet som blandede tal.' : 'Svar skal være forkortede.'
+    return level.form === 'mixed'
+      ? 'Svar skal være forkortede og skrevet som blandede tal.'
+      : 'Svar skal være forkortede.'
   }
   return ''
 }

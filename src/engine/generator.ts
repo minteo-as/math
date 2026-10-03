@@ -314,7 +314,8 @@ const GENERATORS: Record<string, LevelGen> = {
     randomValue: (rng) => frac(rng.next() < 0.5 ? rng.int(2, 10) : rng.int(2, 99)),
     valid: (f) => intOk(f, false),
     trapValid: (f) => intOk(f, false),
-    puzzleOk: (eqs) => distinctEqs(eqs) && noTrivialMul(eqs) && new Set(eqs.map((e) => e.op)).size >= 3 && carryCount(eqs) >= 1,
+    puzzleOk: (eqs) =>
+      distinctEqs(eqs) && noTrivialMul(eqs) && new Set(eqs.map((e) => e.op)).size >= 3 && carryCount(eqs) >= 1,
   },
   H4: {
     templates: ['anchor', 'wide', 'tower'],
@@ -332,7 +333,9 @@ const GENERATORS: Record<string, LevelGen> = {
     puzzleOk: (eqs) => {
       const all = eqs.flatMap((e) => e.vals)
       const ops = new Set(eqs.map((e) => e.op))
-      return distinctEqs(eqs) && noTrivialMul(eqs) && all.filter((v) => v.n < 0).length * 3 >= all.length && ops.size >= 3
+      return (
+        distinctEqs(eqs) && noTrivialMul(eqs) && all.filter((v) => v.n < 0).length * 3 >= all.length && ops.size >= 3
+      )
     },
   },
   H5: {
@@ -350,7 +353,9 @@ const GENERATORS: Record<string, LevelGen> = {
     puzzleOk: (eqs) => {
       const all = eqs.flatMap((e) => e.vals)
       const ops = new Set(eqs.map((e) => e.op))
-      return distinctEqs(eqs) && noTrivialMul(eqs) && all.filter((v) => v.n < 0).length * 4 >= all.length && ops.size === 4
+      return (
+        distinctEqs(eqs) && noTrivialMul(eqs) && all.filter((v) => v.n < 0).length * 4 >= all.length && ops.size === 4
+      )
     },
   },
 }
@@ -461,7 +466,11 @@ function pickAhead(
     if (!gen.valid(value, ctx, roles.get(key))) continue
     const ok = layout.equations.every((eq, i) => {
       if (!eq.nums.includes(key)) return true
-      const known = eq.nums.map((k) => (k === key ? value : (values.get(k) ?? null))) as [Frac | null, Frac | null, Frac | null]
+      const known = eq.nums.map((k) => (k === key ? value : (values.get(k) ?? null))) as [
+        Frac | null,
+        Frac | null,
+        Frac | null,
+      ]
       const missing = known.filter((v) => !v).length
       if (missing !== 1) return true
       const pos = known.findIndex((v) => !v) as 0 | 1 | 2
@@ -707,9 +716,11 @@ export function generatePuzzle(code: string, seed: number, templateName?: string
 
 /** En "fingeraftryk" af banen, så vi undgår dubletter. */
 export function puzzleSignature(p: Puzzle): string {
-  return p.equations
-    .map((eq) => eq.op)
-    .join('') + '|' + p.cells.map((c) => (c.kind === 'given' ? tokenKey(c.value) : c.kind)).join(',')
+  return (
+    p.equations.map((eq) => eq.op).join('') +
+    '|' +
+    p.cells.map((c) => (c.kind === 'given' ? tokenKey(c.value) : c.kind)).join(',')
+  )
 }
 
 export function generateLevel(code: string, count: number, baseSeed: number): Puzzle[] {
