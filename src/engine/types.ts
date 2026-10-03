@@ -67,6 +67,7 @@ export type MisconceptionKind =
   | 'lig-sign-op'
   | 'lig-move-sign'
   | 'lig-sub-coef'
+  | 'lig-sub-denom'
   | 'lig-mul-instead'
   | 'lig-div-instead'
   | 'lig-one-side'

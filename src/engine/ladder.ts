@@ -250,7 +250,9 @@ function substituted(t: ExprToken, x: number): string {
   const parts = terms(poly(t.c)).map(([k, d], idx) => {
     const abs = Math.abs(k.n)
     const sign = k.n < 0 ? '−' : '+'
-    const body = d === 0 ? String(abs) : abs === 1 ? xs : `${abs} · ${xs}`
+    // Et negativt x forrest står fint uden parentes: −21 − 5, men 3 · (−21) og 5 − (−21).
+    const lone = idx === 0 && k.n > 0 && abs === 1
+    const body = d === 0 ? String(abs) : lone ? (x < 0 ? `−${-x}` : String(x)) : abs === 1 ? xs : `${abs} · ${xs}`
     return idx === 0 ? (k.n < 0 ? `−${body}` : body) : ` ${sign} ${body}`
   })
   const inner = parts.join('') || '0'

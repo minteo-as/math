@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { Token } from '../engine/value'
+import type { Tile } from '../engine/value'
 import { moveFocus } from '../keyboardNav'
 import FractionView from './FractionView.vue'
 
 const props = defineProps<{
-  tiles: Token[]
+  tiles: Tile[]
   bank: number[]
   selected: number | null
   dragging: number | null

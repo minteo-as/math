@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { parts } from '../engine/fraction'
-import { exprText, isExpr, termCount, valueText, type Token } from '../engine/value'
+import { exprText, exprTokenText, isExpr, isStep, stepText, termCount, valueText, type Tile } from '../engine/value'
 
 const props = withDefaults(
   defineProps<{
-    value: Token
+    value: Tile
     /** Sæt parentes om udtryk med flere led (bestemmes af feltet, ikke af brikken). */
     paren?: boolean
     /** Skru skriften ned, så udtrykket kan være i et felt med fast bredde. */
     fit?: boolean
     /** Sæt parentes om et negativt helt tal, fx 5 − (−3). */
     negParen?: boolean
+    /** Fast skriftstørrelse (brede felter, fx i ligninger) – ingen skalering efter længden. */
+    plain?: boolean
   }>(),
-  { paren: false, fit: true, negParen: false },
+  { paren: false, fit: true, negParen: false, plain: false },
 )
 
 /** Skal udtrykket i parentes her? Kun udtryk med flere led, og kun hvor feltet beder om det. */
@@ -22,7 +24,7 @@ const wrapped = computed(() => props.paren && isExpr(props.value) && termCount(p
 /** Negativt helt tal, der skal i parentes. */
 const negWrapped = computed(() => {
   const v = props.value
-  return props.negParen && !isExpr(v) && v.d === 1 && v.n < 0 && v.form === 'frac'
+  return props.negParen && !isExpr(v) && !isStep(v) && v.d === 1 && v.n < 0 && v.form === 'frac'
 })
 
 // Skærmlæsere skal høre den samme parentes, som står på skærmen – ellers ændres betydningen.
@@ -30,15 +32,27 @@ const label = computed(() =>
   wrapped.value || negWrapped.value ? `(${valueText(props.value)})` : valueText(props.value),
 )
 
-/** Udtryk vises som én tekst uden mellemrum, fx "x²+6x+9". */
+/** Udtryk vises som én tekst uden mellemrum, fx "x²+6x+9" eller "2(x+3)". */
 const expr = computed(() => {
   const v = props.value
-  if (!isExpr(v)) return null
-  const text = exprText(v.c, true)
+  if (!isExpr(v) || v.d !== undefined) return null
+  const text = exprTokenText(v, true)
   return wrapped.value ? `(${text})` : text
 })
 
-const p = computed(() => (isExpr(props.value) ? null : parts(props.value)))
+/** Udtryk over en brøkstreg (ligninger), fx x/3 eller (x+2)/5 – vist som en rigtig brøk. */
+const exprFrac = computed(() => {
+  const v = props.value
+  return isExpr(v) && v.d !== undefined ? { top: exprText(v.c, true), bottom: v.d } : null
+})
+
+/** En operation i en ligning, fx "−5" eller ": 3". */
+const step = computed(() => (isStep(props.value) ? stepText(props.value) : null))
+
+const p = computed(() => {
+  const v = props.value
+  return isExpr(v) || isStep(v) ? null : parts(v)
+})
 
 /**
  * Hele tal skaleres efter længden, så fx (−93) kan være i et smalt felt.
@@ -46,7 +60,7 @@ const p = computed(() => (isExpr(props.value) ? null : parts(props.value)))
  */
 const intStyle = computed(() => {
   const v = props.value
-  if (!props.fit || isExpr(v) || v.d !== 1 || v.form !== 'frac') return undefined
+  if (!props.fit || isExpr(v) || isStep(v) || v.d !== 1 || v.form !== 'frac') return undefined
   // Et ciffer tæller 1, minustegnet er lidt bredere, og parenteserne er smalle.
   const width = String(Math.abs(v.n)).length + (v.n < 0 ? 1.1 : 0) + (negWrapped.value ? 1.2 : 0)
   const size = Math.min(1.4, 3.3 / width)
@@ -63,6 +77,7 @@ function sizeClass(text: string): string {
  * Et felt er ca. 2,9 gange skriftstørrelsen bredt, og et fed tegn ca. 0,62 af den.
  */
 function exprSize(text: string): string {
+  if (props.plain) return '1em'
   // Minustegnet er bredt, ² er smalt.
   const width = [...text].reduce((w, ch) => w + (ch === '−' ? 1.35 : ch === '²' ? 0.55 : 1), 0)
   // På brikkerne i bunken må teksten ikke blive for lille – de bliver i stedet bredere.
@@ -75,6 +90,11 @@ function exprSize(text: string): string {
   <span class="num" :class="{ 'neg-paren': negWrapped }" :style="intStyle" :aria-label="label" role="img">
     <span v-if="negWrapped" class="paren">(</span>
     <span v-if="expr !== null" class="text" :style="{ fontSize: exprSize(expr) }">{{ expr }}</span>
+    <span v-else-if="step !== null" class="text" :style="{ fontSize: exprSize(step) }">{{ step }}</span>
+    <span v-else-if="exprFrac" class="frac">
+      <span class="top" :style="{ fontSize: exprSize(exprFrac.top) }">{{ exprFrac.top }}</span>
+      <span class="bottom">{{ exprFrac.bottom }}</span>
+    </span>
     <template v-else-if="p">
       <span v-if="p.negative" class="sign">−</span>
       <span v-if="p.text !== null" class="text" :class="sizeClass(p.text)">{{ p.text }}</span>

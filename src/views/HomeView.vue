@@ -18,7 +18,7 @@ function levelStars(level: string) {
       <img class="logo" :src="logo" alt="" width="76" height="76" />
       <div>
         <h1>Matkryds</h1>
-        <p>Læg brikkerne, så alle regnestykker går op – både vandret og lodret.</p>
+        <p>Læg brikkerne, så regnestykkerne går op.</p>
       </div>
     </header>
 

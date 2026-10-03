@@ -92,7 +92,7 @@ Tommelfingerregel for versionsnumre:
 - Brikkerne lægges ved at trække dem eller ved at trykke på en brik og derefter på et felt.
 - **Fælde-brikker** er de svar, man får ved typiske fejl (fx `1/2 + 1/3 = 2/5`). På de lave niveauer forklarer spillet fejlen.
 - **Tjek** virker, når alle felter er udfyldt. Hvad et tjek afslører, afhænger af niveauet:
-  - de lette niveauer (hele tal 1–3, brøker 1–2, decimaltal 1–2, algebra 1–2): hvilke ligninger der er forkerte, plus en forklaring på fejlen
+  - de lette niveauer (hele tal 1–3, brøker 1–2, decimaltal 1–2, ligninger 1–3, algebra 1–2): hvilke ligninger der er forkerte, plus en forklaring på fejlen
   - de øvrige niveauer: hvilke ligninger der er forkerte
   - (mulighed til svære niveauer senere: kun hvor mange ligninger der er forkerte)
   - Uanset niveau vises det, hvis en brik har den rigtige værdi, men står på den forkerte form.
@@ -154,7 +154,21 @@ På decimal- og procentniveauerne har hvert felt en fast skriveform. Procenter s
 - Ekstra hint på algebra: **Indsæt et tal**. Det viser, hvad de kendte udtryk giver for et bestemt x, og hvad det manglende udtryk derfor skal give. x vælges, så kun den rigtige brik passer. Hintet koster en stjerne som de andre.
 - Når det ukendte er et led i et gangestykke (`3 · ? = 6x + 9`), øver eleven at sætte uden for parentes.
 
-Ligningsløsning kommer senere som en anden spilmekanik.
+**Ligninger** (bane-id'er `L1-01` osv.) – en anden spilmekanik: **ligningstrappen**. Ligningen står øverst, og eleven løser den trin for trin. I hvert trin lægger eleven en operation (fx `−5`, `: 3`, `−2x`) i den stiplede boks og derefter det, der så står på hver side, i rækken under. Nederst står `x = ?`. Emnet ligger før algebra.
+
+| Niveau | Indhold | Typiske fejl som fælder |
+|---|---|---|
+| 1 | `x + a = b`, `x − a = b` (ét trin) | `x + 5 = 12`: `+5` (samme regnetegn), `x = 17` (5 flyttet uden at skifte fortegn) |
+| 2 | `ax = b`, `x/a = b` (ét trin) | `−3` i stedet for `: 3`, gange/dividere byttet om |
+| 3 | `ax + b = c` (to trin) | som 1 og 2 |
+| 4 | x på begge sider, `ax + b = cx + d` (tre trin) | `+2x` i stedet for `−2x`, operationen kun på den ene side |
+| 5 | Parenteser og brøker: `a(x + b) = c`, `(x + b)/a = c` | som ovenfor |
+
+- Et trin er rigtigt, når operationen er udført korrekt på begge sider – sat sammen med rækken under. Tjek markerer de forkerte trin.
+- Løsningerne er hele tal. På niveau 1–3 er alle tal positive, fra niveau 4 kan x være negativ.
+- Når ligningen er løst, vises prøven: x sat ind i den oprindelige ligning, fx `Prøve: 3 · 5 + 5 = 20 ✓`.
+- Hints: "Hvor starter jeg?" markerer det næste trin, og "Vis mellemregning" forklarer, hvad der skal fjernes, eller hvad der skal regnes ud på hver side.
+- Udskrift virker også: trappen står med tomme felter og brikkerne under.
 
 ## Struktur
 
@@ -164,6 +178,8 @@ src/engine/        Ren TypeScript – ingen Vue. Kan testes for sig.
   value.ts         Brikker (tal eller udtryk) og polynomieregning – tjek og løser regner på polynomier
   algebra.ts       Algebra: typiske fejl, mellemregninger og hintet "Indsæt et tal"
   algebraGenerator.ts  Banegenerator til algebra
+  ladder.ts        Ligningstrappen: tjek af trin, løser, hints og prøve
+  ladderGenerator.ts  Banegenerator til ligninger
   levels.ts        Emner og niveauer med deres regler (forkortning, feedback-type …)
   evaluate.ts      Tjek af brættet
   solver.ts        Løser: entydig løsning? kan den løses skridt for skridt?
@@ -193,3 +209,4 @@ Banerne laves af et script, og scriptet tjekker hver bane:
   Stjerner gemt før sorteringen flyttes automatisk med over på samme bane (`formerId`, se `src/progress.ts`).
 
 Alt dette tjekkes igen i `src/engine/puzzles.test.ts`.
+Ligningerne tjekkes på samme måde (én løsning, fælderne er forkerte, tallene er hele og højst 99) i `src/engine/ladder.test.ts`.

@@ -110,8 +110,8 @@ const GENERATORS: Record<string, LadderLevelGen> = {
         x,
         traps: [
           { tile: S(':', [a]), step: 0, cell: stepKey(0), kind: 'lig-div-instead' },
-          { tile: num(b + a), step: 0, cell: rightKey(1), kind: 'lig-div-instead' },
-          { tile: S('-', [a]), step: 0, cell: stepKey(0), kind: 'lig-sign-op' },
+          { tile: num(b + a), step: 0, cell: rightKey(1), kind: 'lig-sub-denom' },
+          { tile: S('-', [a]), step: 0, cell: stepKey(0), kind: 'lig-sub-denom' },
         ],
       }
     },

@@ -3,12 +3,13 @@ import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import FractionView from '../components/FractionView.vue'
 import PrintIcon from '../components/PrintIcon.vue'
+import LadderBoard from '../components/LadderBoard.vue'
 import PuzzleGrid from '../components/PuzzleGrid.vue'
 import StarRow from '../components/StarRow.vue'
 import TileBank from '../components/TileBank.vue'
 import { useGame } from '../composables/useGame'
 import { ruleText as levelRuleText, topicInfo } from '../engine/levels'
-import { nextPuzzle, puzzleById } from '../puzzles'
+import { isLadder, nextPuzzle, puzzleById } from '../puzzles'
 
 const props = defineProps<{ id: string }>()
 const router = useRouter()
@@ -159,7 +160,8 @@ onBeforeUnmount(() => cleanup?.())
 // Vælg en brik med Enter → fokus hopper til et tomt felt. Læg den med Enter → fokus tilbage
 // til bunken (eller til Tjek, når alle felter er udfyldt). Piletaster flytter rundt.
 
-const gridRef = ref<InstanceType<typeof PuzzleGrid> | null>(null)
+/** Brættet – krydset (PuzzleGrid) eller ligningstrappen (LadderBoard); begge har samme metoder. */
+const gridRef = ref<{ focusCell(key: string): void; activeCell(): string | null } | null>(null)
 const bankRef = ref<InstanceType<typeof TileBank> | null>(null)
 const checkButton = ref<HTMLButtonElement | null>(null)
 
@@ -217,7 +219,7 @@ function goNext() {
     <RouterLink to="/">Til forsiden</RouterLink>
   </div>
 
-  <div v-else class="page game" :class="{ 'many-tiles': puzzle.tiles.length > 9 }">
+  <div v-else class="page game" :class="{ 'many-tiles': game.tiles.length > 9 }">
     <header class="topbar">
       <RouterLink class="icon-btn" :to="{ name: 'level', params: { level: puzzle.level } }" aria-label="Tilbage">←</RouterLink>
       <div class="title">
@@ -238,9 +240,24 @@ function goNext() {
     <p v-if="ruleText" class="rule">{{ ruleText }}</p>
 
     <div ref="boardWrap" class="board-wrap">
-      <PuzzleGrid
-        ref="gridRef"
+      <LadderBoard
+        v-if="isLadder(puzzle)"
         :puzzle="puzzle"
+        ref="gridRef"
+        :board="game.board"
+        :locked="game.locked"
+        :wrong-equations="game.feedback.value?.wrongEquations ?? []"
+        :hint-equation="game.hintTarget.value?.equation ?? null"
+        :hint-cell="game.hintTarget.value?.cell ?? null"
+        :solved="game.solved.value"
+        :can-drop="drag.tile !== null || game.selected.value !== null"
+        @tap-cell="tapCell"
+        @drag-start="startDrag"
+      />
+      <PuzzleGrid
+        v-else
+        :puzzle="puzzle"
+        ref="gridRef"
         :board="game.board"
         :locked="game.locked"
         :wrong-equations="game.feedback.value?.wrongEquations ?? []"
@@ -270,9 +287,11 @@ function goNext() {
       </section>
       <p v-else-if="game.hintTarget.value" class="panel hint-steps" aria-live="polite">
         {{
-          game.hintTarget.value.single
-            ? 'Start med den markerede ligning – der mangler kun ét tal.'
-            : 'Kig på den markerede ligning og brikkerne: hvilke passer?'
+          game.isLadder
+            ? 'Start med det markerede trin.'
+            : game.hintTarget.value.single
+              ? 'Start med den markerede ligning – der mangler kun ét tal.'
+              : 'Kig på den markerede ligning og brikkerne: hvilke passer?'
         }}
       </p>
 
@@ -280,7 +299,7 @@ function goNext() {
         <TileBank
           ref="bankRef"
           class="dock-bank"
-          :tiles="puzzle.tiles"
+          :tiles="game.tiles"
           :bank="game.bank.value"
           :selected="game.selected.value"
           :dragging="drag.tile"
@@ -335,6 +354,7 @@ function goNext() {
       <div class="dialog">
         <h2 id="done-title">Flot klaret!</h2>
         <StarRow :stars="game.stars.value" large />
+        <p v-if="game.proof" class="proof">{{ game.proof }}</p>
         <ul v-if="game.feedback.value?.messages.length" class="nudges">
           <li v-for="m in game.feedback.value.messages" :key="m">{{ m }}</li>
         </ul>
@@ -351,7 +371,7 @@ function goNext() {
       :style="{ left: `${drag.x}px`, top: `${drag.y}px` }"
       aria-hidden="true"
     >
-      <FractionView :value="puzzle.tiles[drag.tile]" />
+      <FractionView :value="game.tiles[drag.tile]" />
     </div>
   </div>
 </template>
@@ -555,6 +575,14 @@ function goNext() {
 }
 .dialog h2 {
   margin: 0 0 8px;
+}
+.proof {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ok-bg);
+  color: var(--ok);
+  font-weight: 600;
 }
 .nudges {
   text-align: left;

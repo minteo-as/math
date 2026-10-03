@@ -76,6 +76,16 @@ describe('ligningstrappen – motor', () => {
     expect(ladderExplain(lad, { equation: 0, cell: 'S0', single: true })[0]).toContain('+5')
     expect(ladderProof(lad)).toBe('Prøve: 3 · 5 + 5 = 20 ✓')
   })
+
+  it('prøven sætter kun parentes om et negativt x, når den er nødvendig', () => {
+    const neg = (left: ExprToken, right: ExprToken, x: number): LadderPuzzle => ({
+      ...lad,
+      rows: [{ left: { kind: 'given', value: left }, right: { kind: 'given', value: right } }],
+      x,
+    })
+    expect(ladderProof(neg(E([-5, 1], { d: 2 }), E([-13]), -21))).toBe('Prøve: (−21 − 5) : 2 = −13 ✓')
+    expect(ladderProof(neg(E([12, 4]), E([-6, 1]), -6))).toBe('Prøve: 4 · (−6) + 12 = −12  og  −6 − 6 = −12 ✓')
+  })
 })
 
 describe.each(file.ladders.map((p) => [p.id, p] as const))('ligning %s', (_id, p) => {
