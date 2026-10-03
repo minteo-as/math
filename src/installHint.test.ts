@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canSuggestInstall, dismissedRecently, type Device } from './installHint'
+import { canSuggestInstall, dismissedRecently, installPlatform, type Device } from './installHint'
 
 const IPHONE_SAFARI =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'
@@ -11,6 +11,13 @@ const INSTAGRAM =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 350.0'
 const ANDROID =
   'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36'
+const ANDROID_FIREFOX = 'Mozilla/5.0 (Android 14; Mobile; rv:131.0) Gecko/131.0 Firefox/131.0'
+const ANDROID_SAMSUNG =
+  'Mozilla/5.0 (Linux; Android 14; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/26.0 Chrome/122.0 Mobile Safari/537.36'
+const ANDROID_WEBVIEW =
+  'Mozilla/5.0 (Linux; Android 14; Pixel 8; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0 Mobile Safari/537.36'
+const MAC =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36'
 
 const device = (userAgent: string, extra: Partial<Device> = {}): Device => ({
   userAgent,
@@ -33,10 +40,21 @@ describe('forslag om hjemmeskærmen', () => {
     expect(canSuggestInstall(device(IPHONE_SAFARI, { displayModeStandalone: true }))).toBe(false)
   })
 
-  it('vises ikke på Mac, Android eller i apps som Instagram', () => {
+  it('vises ikke på computer eller i apps som Instagram', () => {
     expect(canSuggestInstall(device(IPAD_AS_MAC, { maxTouchPoints: 0 }))).toBe(false)
-    expect(canSuggestInstall(device(ANDROID, { platform: 'Linux armv8l' }))).toBe(false)
+    expect(canSuggestInstall(device(MAC, { maxTouchPoints: 0 }))).toBe(false)
     expect(canSuggestInstall(device(INSTAGRAM))).toBe(false)
+  })
+
+  it('vælger vejledning efter enhed', () => {
+    const android = (ua: string, extra: Partial<Device> = {}) =>
+      installPlatform(device(ua, { platform: 'Linux armv8l', ...extra }))
+    expect(installPlatform(device(IPHONE_SAFARI))).toBe('ios')
+    expect(android(ANDROID)).toBe('android')
+    expect(android(ANDROID_FIREFOX)).toBe('android')
+    expect(android(ANDROID_SAMSUNG)).toBe('android')
+    expect(android(ANDROID_WEBVIEW)).toBeNull()
+    expect(android(ANDROID, { displayModeStandalone: true })).toBeNull()
   })
 
   it('"Ikke nu" holder i 30 dage', () => {
