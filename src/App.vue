@@ -27,9 +27,9 @@ watch(
 </template>
 
 <style scoped>
-/* Spillesiden er et fast element, der dækker hele skærmen. Så farver Safari på iPhone
-   statuslinjen med sidens baggrund i stedet for at sløre toppen af siden (det gør den,
-   når indhold kan scrolle ind under statuslinjen). */
+/* I browseren er spillesiden et fast element, der dækker hele skærmen. Så farver Safari på
+   iPhone statuslinjen med sidens baggrund i stedet for at sløre toppen af siden (det gør den,
+   når indhold kan scrolle ind under statuslinjen). Fra hjemmeskærmen: se nedenfor. */
 .app.fill {
   position: fixed;
   inset: 0;
@@ -40,26 +40,24 @@ watch(
   background: var(--page-bg);
   overflow: hidden;
 }
-/* Fra hjemmeskærmen på iPhone slører Safari toppen af siden under statuslinjen – medmindre
-   et fast element ligger ved kanten. Så her er hele skærmen et fast element, der selv
-   scroller. Den klæbende stribe øverst holder farven ved kanten ens, mens man scroller.
-   I browseren scroller siden som normalt. */
+/* Fra hjemmeskærmen på iPhone farver Safari statuslinjen ud fra toppen af siden:
+   - Scroller selve siden, slører Safari toppen, når indhold scroller ind under statuslinjen.
+   - Ligger der et fast element ved kanten, får statuslinjen dets farve, når siden indlæses,
+     og følger ikke med bagefter (fx når hjælpemenuen tones ned, eller man skifter til mørk).
+   Derfor scroller selve siden aldrig (se style.css), .screen scroller indeni, og der er intet
+   fast element ved kanten. Så følger statuslinjen med siden. Statuslinjen giver selv luft
+   over indholdet, så der er ingen padding øverst. I browseren er intet ændret. */
 @media screen and (display-mode: standalone) {
   .screen {
-    position: fixed;
-    inset: 0;
+    height: 100%;
     overflow-y: auto;
-    background: var(--page-bg);
   }
-  .screen:not(.fill)::before {
-    content: '';
-    display: block;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    height: 12px;
-    margin-bottom: -12px;
-    background: var(--page-bg);
+  .app {
+    padding-top: 0;
+  }
+  .app.fill {
+    position: static;
+    height: 100%;
   }
 }
 .version {
