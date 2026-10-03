@@ -9,8 +9,9 @@ import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { algebraLevels, generateAlgebraLevel } from '../src/engine/algebraGenerator'
 import { generateLevel, generatorLevels } from '../src/engine/generator'
+import { difficulty } from '../src/engine/difficulty'
 import { levelInfo } from '../src/engine/levels'
-import type { PuzzleFile } from '../src/engine/types'
+import type { Puzzle, PuzzleFile } from '../src/engine/types'
 
 const PUZZLES_PER_LEVEL = 20
 const SEED = 2026
@@ -26,6 +27,22 @@ function seedIndex(code: string): number {
   return offset[info.topic] + info.number
 }
 
+/**
+ * Banerne i et niveau kommer i rækkefølge fra let til svær (se difficulty.ts).
+ * Generatorens egen rækkefølge gemmes i formerId, så gamle stjerner kan flyttes med.
+ */
+function sortByDifficulty(puzzles: Puzzle[]): Puzzle[] {
+  const scored = puzzles.map((p, i) => ({ p, i, score: difficulty(p).score }))
+  scored.sort((a, b) => a.score - b.score || a.i - b.i)
+  return scored.map(({ p }, i) => {
+    const index = i + 1
+    const id = `${p.level}-${String(index).padStart(2, '0')}`
+    // Felterne i samme rækkefølge som før, med formerId lige efter id.
+    const { id: formerId, index: _old, ...rest } = p
+    return { id, formerId, index, ...rest }
+  })
+}
+
 const file: PuzzleFile = { version: 1, puzzles: [] }
 const jobs = [
   ...generatorLevels().map((code) => ({ code, make: generateLevel })),
@@ -33,9 +50,9 @@ const jobs = [
 ]
 for (const { code, make } of jobs) {
   const start = Date.now()
-  const puzzles = make(code, PUZZLES_PER_LEVEL, SEED * 1000 + seedIndex(code) * 100_000)
-  file.puzzles.push(...puzzles)
-  console.log(`Niveau ${code}: ${puzzles.length} baner (${Date.now() - start} ms)`)
+  const generated = make(code, PUZZLES_PER_LEVEL, SEED * 1000 + seedIndex(code) * 100_000)
+  file.puzzles.push(...sortByDifficulty(generated))
+  console.log(`Niveau ${code}: ${generated.length} baner (${Date.now() - start} ms)`)
 }
 
 const out = fileURLToPath(new URL('../src/data/puzzles.json', import.meta.url))

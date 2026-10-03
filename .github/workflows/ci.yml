@@ -51,6 +51,7 @@ jobs:
         run: |
           npm run build
           test -f dist/.htaccess || { echo "::error::dist/.htaccess mangler (cache-regler til webserveren)."; exit 1; }
+          node --check dist/sw.js || { echo "::error::dist/sw.js mangler eller er ugyldig (service worker til offline)."; exit 1; }
 
       # upload-artifact pakker selv mappen som en zip. Downloaden indeholder
       # index.html, .htaccess og assets/ direkte i roden – klar til at lægge på webserveren.

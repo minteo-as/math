@@ -33,4 +33,9 @@ const fill = computed(() => route.name === 'game')
   font-size: 12px;
   color: var(--muted);
 }
+@media print {
+  .version {
+    display: none;
+  }
+}
 </style>

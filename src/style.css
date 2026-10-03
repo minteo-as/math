@@ -6,6 +6,10 @@
   --muted: #5b6475;
   --accent: #2f6fdd;
   --focus: #2f6fdd;
+  --on-accent: #ffffff;
+  /* Kanter på knapper og skillelinjer. */
+  --line: #d3d9e4;
+  --divider: #e3e7ef;
 
   --cell-bg: #fff8e6;
   --cell-border: #c9b27a;
@@ -26,10 +30,44 @@
   --star: #e0a800;
   --star-off: #d5dae3;
 
-  color-scheme: light;
+  color-scheme: light dark;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--ink);
   -webkit-text-size-adjust: 100%;
+}
+
+/* Mørk tilstand: følger telefonens/computerens indstilling (kun på skærm – udskrifter er lyse). Samme farver i spillet –
+   gule felter, grønne brikker, blå knapper – bare i mørke udgaver. */
+@media screen and (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #12161f;
+    --surface: #1c2230;
+    --ink: #e8ecf3;
+    --muted: #a0a9ba;
+    --accent: #3d7be8;
+    --focus: #7aa7ff;
+    --line: #353d4f;
+    --divider: #2a3140;
+
+    --cell-bg: #2b2719;
+    --cell-border: #6e5d35;
+    --given-bg: #3b3322;
+    --blank-bg: #161a23;
+    --tile-bg: #153223;
+    --tile-border: #2f7a50;
+    --tile-ink: #82e2a8;
+    --locked-bg: #1d2a45;
+    --locked-ink: #a3c1ff;
+
+    --wrong: #ff7070;
+    --wrong-bg: #3b1d20;
+    --ok: #76dd9c;
+    --ok-bg: #173826;
+    --hint-bg: #47390e;
+    --hint-ring: #e0b42a;
+    --star: #f2c440;
+    --star-off: #3a4152;
+  }
 }
 
 * {
@@ -57,7 +95,7 @@ button,
   font: inherit;
   color: inherit;
   border-radius: 12px;
-  border: 1px solid #d3d9e4;
+  border: 1px solid var(--line);
   background: var(--surface);
   cursor: pointer;
 }
@@ -87,7 +125,7 @@ a:focus-visible {
 .primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .icon-btn {
@@ -98,9 +136,24 @@ a:focus-visible {
   place-items: center;
   border-radius: 50%;
   background: var(--surface);
-  border: 1px solid #d3d9e4;
+  border: 1px solid var(--line);
   color: var(--ink);
   font-size: 22px;
   text-decoration: none;
   box-shadow: 0 2px 6px rgb(0 0 0 / 0.06);
+}
+
+/* Udskrift (opgaveark): hvid baggrund og hele papirets bredde. */
+@page {
+  size: A4;
+  margin: 14mm;
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .app {
+    max-width: none;
+    padding: 0;
+  }
 }

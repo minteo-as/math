@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import PrintIcon from '../components/PrintIcon.vue'
 import StarRow from '../components/StarRow.vue'
 import { LEVELS, topicInfo } from '../engine/levels'
 import { progress } from '../progress'
@@ -20,7 +21,14 @@ const puzzles = computed(() => puzzlesForLevel(props.level))
         <strong v-if="info">{{ topic?.title }} · Niveau {{ info.number }}</strong>
         <span v-if="info">{{ info.title }}</span>
       </div>
-      <span class="icon-btn spacer" aria-hidden="true"></span>
+      <RouterLink
+        class="icon-btn"
+        :to="{ name: 'print', params: { target: level } }"
+        aria-label="Udskriv opgaveark"
+        title="Udskriv opgaveark"
+      >
+        <PrintIcon />
+      </RouterLink>
     </header>
 
     <template v-if="info && puzzles.length">
@@ -53,9 +61,6 @@ const puzzles = computed(() => puzzlesForLevel(props.level))
 .title span {
   color: var(--muted);
   font-size: 14px;
-}
-.spacer {
-  visibility: hidden;
 }
 .desc {
   color: var(--muted);

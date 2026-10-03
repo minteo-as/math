@@ -1,6 +1,7 @@
 /**
  * Emner, niveauer og deres regler – samlet ét sted, så gameplay kan justeres her.
  */
+import type { Puzzle } from './types'
 
 /**
  * Hvad sker der, hvis eleven lægger en brik med den rigtige værdi,
@@ -298,4 +299,17 @@ export function levelsForTopic(topic: TopicId): LevelInfo[] {
 
 export function topicInfo(id: TopicId): Topic {
   return TOPICS.find((t) => t.id === id)!
+}
+
+/** Den særlige regel for banen, som vises over brættet (tom tekst, hvis der ikke er nogen). */
+export function ruleText(level: LevelInfo, puzzle: Puzzle): string {
+  if (level.form === 'expr') return 'Udtrykkene på hver side af = skal være ens – for alle værdier af x.'
+  if (level.form === 'dec') {
+    const hasPercent = puzzle.equations.some((e) => e.op === 'af')
+    return hasPercent ? 'Procenter skrives med %, alle andre tal som decimaltal.' : ''
+  }
+  if (level.reduce === 'required') {
+    return level.form === 'mixed' ? 'Svar skal være forkortede og skrevet som blandede tal.' : 'Svar skal være forkortede.'
+  }
+  return ''
 }

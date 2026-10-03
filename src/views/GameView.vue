@@ -2,11 +2,12 @@
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import FractionView from '../components/FractionView.vue'
+import PrintIcon from '../components/PrintIcon.vue'
 import PuzzleGrid from '../components/PuzzleGrid.vue'
 import StarRow from '../components/StarRow.vue'
 import TileBank from '../components/TileBank.vue'
 import { useGame } from '../composables/useGame'
-import { topicInfo } from '../engine/levels'
+import { ruleText as levelRuleText, topicInfo } from '../engine/levels'
 import { nextPuzzle, puzzleById } from '../puzzles'
 
 const props = defineProps<{ id: string }>()
@@ -18,19 +19,7 @@ const next = puzzle ? nextPuzzle(puzzle) : undefined
 
 const topic = game ? topicInfo(game.level.topic) : null
 
-const ruleText = computed(() => {
-  if (!game || !puzzle) return ''
-  const l = game.level
-  if (l.form === 'expr') return 'Udtrykkene på hver side af = skal være ens – for alle værdier af x.'
-  if (l.form === 'dec') {
-    const hasPercent = puzzle.equations.some((e) => e.op === 'af')
-    return hasPercent ? 'Procenter skrives med %, alle andre tal som decimaltal.' : ''
-  }
-  if (l.reduce === 'required') {
-    return l.form === 'mixed' ? 'Svar skal være forkortede og skrevet som blandede tal.' : 'Svar skal være forkortede.'
-  }
-  return ''
-})
+const ruleText = computed(() => (game && puzzle ? levelRuleText(game.level, puzzle) : ''))
 
 // ---------- Brættet scroller, resten står fast ----------
 
@@ -166,12 +155,51 @@ function startDrag(event: PointerEvent, tile: number) {
 
 onBeforeUnmount(() => cleanup?.())
 
-function tapTile(tile: number) {
-  if (!suppressClick) game?.tapTile(tile)
+// ---------- Tastatur ----------
+// Vælg en brik med Enter → fokus hopper til et tomt felt. Læg den med Enter → fokus tilbage
+// til bunken (eller til Tjek, når alle felter er udfyldt). Piletaster flytter rundt.
+
+const gridRef = ref<InstanceType<typeof PuzzleGrid> | null>(null)
+const bankRef = ref<InstanceType<typeof TileBank> | null>(null)
+const checkButton = ref<HTMLButtonElement | null>(null)
+
+/** Det felt, fokus skal hen til: det seneste felt, hvis det er tomt – ellers det første tomme. */
+function nextEmptyCell(): string | undefined {
+  if (!game) return undefined
+  const last = gridRef.value?.activeCell()
+  if (last && game.board[last] === null && !game.locked.has(last)) return last
+  return Object.keys(game.board).find((k) => game.board[k] === null && !game.locked.has(k)) ?? last ?? undefined
 }
-function tapCell(cell: string) {
-  if (!suppressClick) game?.tapCell(cell)
+
+function tapTile(tile: number, keyboard = false) {
+  if (!game || suppressClick) return
+  game.tapTile(tile)
+  if (keyboard && game.selected.value === tile) {
+    const cell = nextEmptyCell()
+    if (cell) nextTick(() => gridRef.value?.focusCell(cell))
+  }
 }
+
+function tapCell(cell: string, keyboard = false) {
+  if (!game || suppressClick) return
+  const placing = game.selected.value !== null
+  game.tapCell(cell)
+  if (!keyboard || !placing) return
+  nextTick(() => {
+    if (game.complete.value) checkButton.value?.focus()
+    else bankRef.value?.focusTile()
+  })
+}
+
+/** Escape fortryder en valgt brik og sætter fokus tilbage på den. */
+function onKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || !game || helpOpen.value || game.selected.value === null) return
+  const tile = game.selected.value
+  game.selected.value = null
+  bankRef.value?.focusTile(tile)
+}
+window.addEventListener('keydown', onKeydown)
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 function tapBank() {
   if (!game || suppressClick) return
   game.selected.value = null
@@ -196,6 +224,14 @@ function goNext() {
         <strong>Niveau {{ game.level.number }} · Bane {{ puzzle.index }}</strong>
         <span>{{ topic?.title }}: {{ game.level.title }}</span>
       </div>
+      <RouterLink
+        class="icon-btn"
+        :to="{ name: 'print', params: { target: puzzle.id } }"
+        aria-label="Udskriv som opgaveark"
+        title="Udskriv som opgaveark"
+      >
+        <PrintIcon />
+      </RouterLink>
       <button type="button" class="icon-btn" aria-label="Start forfra" title="Start forfra" @click="game.restart()">↻</button>
     </header>
 
@@ -203,6 +239,7 @@ function goNext() {
 
     <div ref="boardWrap" class="board-wrap">
       <PuzzleGrid
+        ref="gridRef"
         :puzzle="puzzle"
         :board="game.board"
         :locked="game.locked"
@@ -241,6 +278,7 @@ function goNext() {
 
       <div class="dock">
         <TileBank
+          ref="bankRef"
           class="dock-bank"
           :tiles="puzzle.tiles"
           :bank="game.bank.value"
@@ -256,6 +294,7 @@ function goNext() {
             <StarRow :stars="game.potentialStars.value" />
           </div>
           <button
+            ref="checkButton"
             type="button"
             class="primary check"
             :disabled="!game.complete.value || game.solved.value"
@@ -366,7 +405,7 @@ function goNext() {
   padding: 12px 16px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-block: 1px solid #e3e7ef;
+  border-block: 1px solid var(--divider);
 }
 .bottom {
   flex: 0 0 auto;

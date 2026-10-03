@@ -77,6 +77,11 @@ export interface Trap {
 export interface Puzzle {
   /** Fx "3-07" = niveau 3, bane 7, eller "P2-07". */
   id: string
+  /**
+   * Id'et i den rækkefølge, generatoren lavede banerne (før de blev sorteret efter sværhedsgrad).
+   * Bruges til at flytte gemte stjerner fra før version 0.5 over på de rigtige baner.
+   */
+  formerId?: string
   /** Niveau-kode, se LevelInfo.code. */
   level: string
   index: number

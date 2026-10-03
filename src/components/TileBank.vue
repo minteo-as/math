@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import type { Token } from '../engine/value'
+import { moveFocus } from '../keyboardNav'
 import FractionView from './FractionView.vue'
 
-defineProps<{
+const props = defineProps<{
   tiles: Token[]
   bank: number[]
   selected: number | null
@@ -11,14 +13,39 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  tapTile: [tile: number]
+  /** `keyboard`: trykket kom fra tastaturet (Enter/mellemrum), ikke fra mus eller finger. */
+  tapTile: [tile: number, keyboard: boolean]
   tapBank: []
   dragStart: [event: PointerEvent, tile: number]
 }>()
+
+// Bunken er ét stop med Tab; piletasterne flytter mellem brikkerne.
+const bankEl = ref<HTMLElement | null>(null)
+const active = ref<number | null>(null)
+const tabTile = computed(() =>
+  active.value !== null && props.bank.includes(active.value) ? active.value : props.bank[0],
+)
+
+function tileButtons(): HTMLElement[] {
+  return [...(bankEl.value?.querySelectorAll<HTMLElement>('button.tile') ?? [])]
+}
+
+function onKeydown(event: KeyboardEvent) {
+  moveFocus(event, tileButtons())
+}
+
+/** Flyt fokus til en brik i bunken – eller den første, hvis den ikke ligger der. */
+function focusTile(tile?: number) {
+  const buttons = tileButtons()
+  const index = tile === undefined ? -1 : props.bank.indexOf(tile)
+  buttons[index >= 0 ? index : 0]?.focus()
+}
+
+defineExpose({ focusTile })
 </script>
 
 <template>
-  <div class="bank" data-bank @click.self="emit('tapBank')">
+  <div ref="bankEl" class="bank" data-bank @click.self="emit('tapBank')">
     <p v-if="bank.length === 0" class="empty" @click="emit('tapBank')">Alle brikker er lagt.</p>
     <button
       v-for="i in bank"
@@ -28,7 +55,10 @@ const emit = defineEmits<{
       :class="{ selected: selected === i, ghosted: dragging === i }"
       :disabled="disabled"
       :aria-pressed="selected === i"
-      @click="emit('tapTile', i)"
+      :tabindex="i === tabTile ? 0 : -1"
+      @click="emit('tapTile', i, $event.detail === 0)"
+      @focus="active = i"
+      @keydown="onKeydown"
       @pointerdown="emit('dragStart', $event, i)"
     >
       <FractionView :value="tiles[i]" :fit="false" />

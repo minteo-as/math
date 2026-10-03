@@ -1,7 +1,12 @@
 # Matkryds
 
-Et krydsregne-spil med brøker, decimaltal, procent og algebra til 9. klasse. Kører i browseren (Vue 3), uden backend og uden login.
+Et krydsregne-spil med hele tal, brøker, decimaltal, procent og algebra til 9. klasse. Kører i browseren (Vue 3), uden backend og uden login.
 Elevens stjerner gemmes kun i browserens `localStorage`.
+
+- Virker uden net, når siden har været åbnet én gang (service worker), og kan installeres som app på Android og føjes til hjemmeskærmen på iPhone.
+- Mørk tilstand følger enhedens indstilling.
+- Kan spilles med tastatur alene: Tab til brættet eller bunken, piletaster mellem felter og brikker, Enter for at vælge og lægge, Escape for at fortryde et valg.
+- Opgaveark: printer-knappen på en bane eller et niveau viser banerne klar til udskrift (én bane pr. side, felter til at skrive i og brikkerne som liste). Der er bevidst intet facit, for siden kan åbnes af alle elever.
 
 ## Kom i gang
 
@@ -164,6 +169,7 @@ src/engine/        Ren TypeScript – ingen Vue. Kan testes for sig.
   solver.ts        Løser: entydig løsning? kan den løses skridt for skridt?
   misconceptions.ts  Typiske fejl → fælde-brikker og forklaringer
   hints.ts         Hints og stjerneberegning
+  difficulty.ts    Sværhedsgrad pr. bane (bruges til at sortere banerne)
   generator.ts     Banegenerator (køres på forhånd via npm run generate)
   templates.ts     Layout-skabeloner (højst 7 kolonner af hensyn til mobil – 9 til hele tal)
 src/data/puzzles.json  De færdiglavede baner (20 pr. niveau)
@@ -172,6 +178,8 @@ src/data/puzzles.json  De færdiglavede baner (20 pr. niveau)
 src/composables/useGame.ts  Spillets tilstand i brugerfladen
 src/components/, src/views/  Vue-komponenter
 design/ikon.svg     Ikonet (kilde). PNG'erne laves med: node design/render-icons.mjs
+scripts/service-worker.ts  Laver dist/sw.js ved build, så spillet virker uden net og kan
+                       installeres som app (sammen med public/manifest.webmanifest)
 public/favicon.svg  Forenklet ikon til browserfanen (uden tal)
 ```
 
@@ -180,5 +188,8 @@ Banerne laves af et script, og scriptet tjekker hver bane:
 - Der er præcis én løsning.
 - Undtagen på brøker 5 og hele tal 5 kan banen løses ved hele tiden at finde en ligning, hvor der kun mangler ét tal.
 - Ingen fælde-brik giver også en rigtig løsning.
+- På brøk 5 er der altid mindst én ligning at starte med, og fællesnævneren i hver ligning er højst 24.
+- Banerne i hvert niveau står fra let til svær (`src/engine/difficulty.ts`: startpunkter, runder, gæt og talstørrelse).
+  Stjerner gemt før sorteringen flyttes automatisk med over på samme bane (`formerId`, se `src/progress.ts`).
 
 Alt dette tjekkes igen i `src/engine/puzzles.test.ts`.
