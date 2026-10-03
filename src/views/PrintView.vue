@@ -7,7 +7,10 @@ import { LEVELS, levelInfo, ruleText, topicInfo } from '../engine/levels'
 import type { CellKey } from '../engine/types'
 import { puzzleById, puzzlesForLevel } from '../puzzles'
 
-/** `target` er enten en bane ("H3-05") eller et helt niveau ("H3"). */
+/**
+ * `target` er enten en bane ("H3-05") eller et helt niveau ("H3").
+ * Bevidst uden facit: siden kan åbnes af alle elever, så løsningerne må ikke stå her.
+ */
 const props = defineProps<{ target: string }>()
 
 const single = puzzleById(props.target)
@@ -17,7 +20,6 @@ const topic = level ? topicInfo(level.topic) : null
 const all = levelCode ? puzzlesForLevel(levelCode) : []
 
 const choice = ref(single ? single.id : 'alle')
-const withAnswers = ref(true)
 const chosen = computed(() => (choice.value === 'alle' ? all : all.filter((p) => p.id === choice.value)))
 const noCells = new Set<CellKey>()
 
@@ -63,7 +65,6 @@ function print() {
             <option v-for="p in all" :key="p.id" :value="p.id">Bane {{ p.index }}</option>
           </select>
         </label>
-        <label class="check"><input v-model="withAnswers" type="checkbox" /> Facit til sidst</label>
         <button type="button" class="primary" @click="print">Udskriv</button>
       </div>
 
@@ -96,28 +97,6 @@ function print() {
         </div>
       </section>
 
-      <section v-if="withAnswers" class="answers">
-        <h2>Facit · {{ topic?.title }} · Niveau {{ level.number }}</h2>
-        <div class="answer-grid">
-          <div v-for="p in chosen" :key="p.id" class="answer">
-            <h3>Bane {{ p.index }}</h3>
-            <div class="board">
-              <PuzzleGrid
-                :puzzle="p"
-                :board="p.solutions[0]"
-                :locked="noCells"
-                :wrong-equations="[]"
-                :hint-equation="null"
-                :hint-cell="null"
-                :solved="false"
-                :can-drop="false"
-                :print-unit="level.form === 'expr' ? 64 : 40"
-                :print-height="420"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
     </template>
   </div>
 </template>
@@ -158,8 +137,7 @@ function print() {
 .options .primary {
   margin-left: auto;
 }
-.sheet,
-.answers {
+.sheet {
   background: var(--surface);
   border-radius: 12px;
   padding: 18px;
@@ -214,40 +192,19 @@ function print() {
   border: 2px solid var(--tile-border);
   border-radius: 6px;
 }
-.answers h2 {
-  margin: 0 0 8px;
-  font-size: 18px;
-}
-.answer-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 12px 20px;
-}
-.answer h3 {
-  margin: 0;
-  font-size: 14px;
-}
-.answer .board {
-  margin: 6px 0;
-}
-
 @media print {
   .no-print {
     display: none;
   }
-  .sheet,
-  .answers {
+  .sheet {
     background: none;
     border-radius: 0;
     padding: 0;
     margin: 0;
   }
-  /* Én bane pr. side, facit på sine egne sider. */
+  /* Én bane pr. side. */
   .sheet {
     break-after: page;
-  }
-  .answer {
-    break-inside: avoid;
   }
   .instruction {
     color: #333;
