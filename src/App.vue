@@ -16,14 +16,24 @@ const fill = computed(() => route.name === 'game')
 </template>
 
 <style scoped>
+/* Spillesiden er et fast element, der dækker hele skærmen. Så farver Safari på iPhone
+   statuslinjen med sidens baggrund i stedet for at sløre toppen af siden (det gør den,
+   når indhold kan scrolle ind under statuslinjen). */
 .app.fill {
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
   padding-top: 12px;
   padding-bottom: 12px;
+  background: var(--page-bg);
   overflow: hidden;
+}
+/* Fra hjemmeskærmen giver statuslinjen selv luft over knapperne. */
+@media (display-mode: standalone) {
+  .app.fill {
+    padding-top: 0;
+  }
 }
 .version {
   max-width: var(--page-max);
