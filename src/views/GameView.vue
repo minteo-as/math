@@ -70,21 +70,18 @@ function closeHelp() {
 }
 
 // ---------- Nedtoning bag hjælpemenuen og "Flot klaret!" ----------
-// Safari på iPhone farver statuslinjen med baggrunden på spillesidens faste element og
-// ser bort fra et halvgennemsigtigt gråt lag ovenpå. Derfor tones siden ned ved at gøre
-// baggrunden mørkere (klassen på <html> bruges i style.css) og indholdet mørkere med
-// brightness(). Det ser ud som et sort lag med 18 % (35 %) dækning – og statuslinjen følger med.
-const dim = computed(() => (game?.solved.value ? 'done' : helpOpen.value ? 'help' : null))
+// Safari på iPhone farver statuslinjen ud fra siden, når den indlæses, og ændrer den ikke
+// bagefter. En nedtoning helt op til kanten giver derfor en lys statuslinje over en mørk
+// topbjælke. Så nedtoningen starter under topbjælken (--dim-top, se ::before i CSS).
+const topbar = ref<HTMLElement | null>(null)
+const dimTop = ref('0px')
 watch(
-  dim,
-  (now) => {
-    const html = document.documentElement.classList
-    html.toggle('dim-help', now === 'help')
-    html.toggle('dim-done', now === 'done')
+  () => helpOpen.value || !!game?.solved.value,
+  (dimmed) => {
+    if (dimmed) dimTop.value = `${topbar.value?.getBoundingClientRect().bottom ?? 0}px`
   },
-  { immediate: true },
+  { immediate: true, flush: 'post' },
 )
-onBeforeUnmount(() => document.documentElement.classList.remove('dim-help', 'dim-done'))
 
 /** Vælg et hint og luk menuen. */
 function useHint(hint: () => void) {
@@ -238,8 +235,8 @@ function goNext() {
     <RouterLink to="/">Til forsiden</RouterLink>
   </div>
 
-  <div v-else class="page game" :class="[{ 'many-tiles': game.tiles.length > 9 }, dim && `dim-${dim}`]">
-    <header class="topbar">
+  <div v-else class="page game" :class="{ 'many-tiles': game.tiles.length > 9 }" :style="{ '--dim-top': dimTop }">
+    <header ref="topbar" class="topbar">
       <RouterLink class="icon-btn" :to="{ name: 'level', params: { level: puzzle.level } }" aria-label="Tilbage"
         >←</RouterLink
       >
@@ -586,12 +583,18 @@ function goNext() {
   padding: 16px;
   z-index: 20;
 }
-/* Nedtoningen (se dim i scriptet): brightness(0.82) er det samme som et sort lag med 18 % dækning. */
-.dim-help > :not(.help-backdrop) {
-  filter: brightness(0.82);
+/* Nedtoningen starter under topbjælken (se dimTop i scriptet). Laget, der fanger tryk,
+   dækker stadig hele skærmen. */
+.help-backdrop::before,
+.overlay::before {
+  content: '';
+  position: absolute;
+  inset: var(--dim-top) 0 0;
+  z-index: -1;
+  background: rgb(0 0 0 / 0.18);
 }
-.dim-done > :not(.overlay) {
-  filter: brightness(0.65);
+.overlay::before {
+  background: rgb(0 0 0 / 0.35);
 }
 .dialog {
   width: min(360px, 100%);
