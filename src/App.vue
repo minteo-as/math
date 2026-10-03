@@ -35,16 +35,10 @@ watch(
   inset: 0;
   display: flex;
   flex-direction: column;
-  padding-top: 12px;
+  /* padding-top kommer fra .app, så topbjælken står samme sted som på de andre sider. */
   padding-bottom: 12px;
-  background: var(--screen-bg);
+  background: var(--page-bg);
   overflow: hidden;
-}
-/* Fra hjemmeskærmen giver statuslinjen selv luft over knapperne. */
-@media (display-mode: standalone) {
-  .app.fill {
-    padding-top: 0;
-  }
 }
 /* Fra hjemmeskærmen på iPhone slører Safari toppen af siden under statuslinjen – medmindre
    et fast element ligger ved kanten. Så her er hele skærmen et fast element, der selv
@@ -55,7 +49,7 @@ watch(
     position: fixed;
     inset: 0;
     overflow-y: auto;
-    background: var(--screen-bg);
+    background: var(--page-bg);
   }
   .screen:not(.fill)::before {
     content: '';
@@ -65,7 +59,7 @@ watch(
     z-index: 10;
     height: 12px;
     margin-bottom: -12px;
-    background: var(--screen-bg);
+    background: var(--page-bg);
   }
 }
 .version {

@@ -81,19 +81,7 @@
 
 body {
   margin: 0;
-  background: var(--screen-bg);
-}
-
-/* Baggrunden bag siden. Mørkere, mens spillets hjælpemenu eller "Flot klaret!" er åben
-   (se GameView) – så Safari på iPhone også toner statuslinjen ned. */
-:root {
-  --screen-bg: var(--page-bg);
-}
-html.dim-help {
-  --screen-bg: color-mix(in srgb, var(--page-bg) 82%, black);
-}
-html.dim-done {
-  --screen-bg: color-mix(in srgb, var(--page-bg) 65%, black);
+  background: var(--page-bg);
 }
 
 .app {
