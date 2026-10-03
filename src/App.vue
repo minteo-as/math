@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 const version = __APP_VERSION__
@@ -7,18 +7,12 @@ const route = useRoute()
 // Spillesiden fylder præcis skærmen: brættet scroller, resten står fast.
 const fill = computed(() => route.name === 'game')
 
-// Fra hjemmeskærmen scroller .screen i stedet for selve siden (se CSS nedenfor),
-// så routerens "start øverst" skal også gælde den.
-const screen = ref<HTMLElement | null>(null)
-watch(
-  () => route.fullPath,
-  () => screen.value?.scrollTo({ top: 0 }),
-  { flush: 'post' },
-)
+// Fra hjemmeskærmen scroller .screen i stedet for selve siden (se CSS nedenfor). Routeren
+// sætter scrollpositionen for begge (se scrollMemory.ts).
 </script>
 
 <template>
-  <div ref="screen" class="screen" :class="{ fill }">
+  <div class="screen" :class="{ fill }">
     <main class="app" :class="{ fill }">
       <RouterView :key="$route.fullPath" />
     </main>
