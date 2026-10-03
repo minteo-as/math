@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import logo from '../assets/logo.png'
+import InstallHint from '../components/InstallHint.vue'
 import { levelsForTopic, TOPICS } from '../engine/levels'
 import { progress } from '../progress'
 import { puzzlesForLevel } from '../puzzles'
@@ -21,6 +22,8 @@ function levelStars(level: string) {
         <p>Læg brikkerne, så regnestykkerne går op.</p>
       </div>
     </header>
+
+    <InstallHint />
 
     <section v-for="t in TOPICS" :key="t.id" class="topic">
       <h2>{{ t.title }}</h2>
