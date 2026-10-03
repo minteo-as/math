@@ -95,12 +95,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               Se mere
             </span>
           </div>
-          <p>Rul ned i menuen, og tryk på <strong>Se mere</strong> nederst.</p>
+          <p>
+            Står <strong>Føj til hjemmeskærm</strong> ikke i menuen, så rul ned og tryk på <strong>Se mere</strong>
+            nederst.
+          </p>
         </li>
         <li>
-          <!-- Listen under "Se mere" (de andre punkter er vist som grå streger) -->
+          <!-- Listen i Del-menuen (som på iOS 27) -->
           <div class="mock menu" aria-hidden="true">
-            <span class="row"><span class="blank"></span></span>
+            <span class="row">Føj til hurtignote</span>
+            <span class="row">Find på side</span>
             <span class="row hot">
               Føj til hjemmeskærm
               <svg viewBox="0 0 24 24">
@@ -108,9 +112,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
                 <path d="M12 8v8M8 12h8" />
               </svg>
             </span>
-            <span class="row"><span class="blank short"></span></span>
           </div>
-          <p>Vælg <strong>Føj til hjemmeskærm</strong> i listen.</p>
+          <p>Vælg <strong>Føj til hjemmeskærm</strong>.</p>
         </li>
         <li>
           <!-- Skærmen "Føj til hjemmeskærm" -->
@@ -306,16 +309,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 }
 .row + .row {
   border-top: 1px solid var(--line);
-}
-.blank {
-  width: 60%;
-  height: 10px;
-  margin: 4px 0;
-  border-radius: 5px;
-  background: var(--line);
-}
-.blank.short {
-  width: 40%;
 }
 .actions {
   justify-content: space-around;
