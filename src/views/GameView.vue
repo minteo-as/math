@@ -366,7 +366,7 @@ function goNext() {
   padding: 12px 16px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-block: 1px solid #e3e7ef;
+  border-block: 1px solid var(--divider);
 }
 .bottom {
   flex: 0 0 auto;

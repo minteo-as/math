@@ -216,7 +216,7 @@ const cells = computed(() =>
   border-radius: 50%;
   font-size: 0.8em;
   font-weight: 700;
-  color: #fff;
+  color: var(--page-bg);
   z-index: 3;
 }
 .badge-wrong {
