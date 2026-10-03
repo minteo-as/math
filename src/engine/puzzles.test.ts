@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest'
 import data from '../data/puzzles.json'
 import { cellMap, evaluateBoard, expectedForm, formIssue, type Board } from './evaluate'
 import { layoutOf } from './generator'
-import { explainSteps, findHintTarget, substitutionHint } from './hints'
+import { difficulty } from './difficulty'
+import { explainSteps, findHintTarget, solutionValues, substitutionHint } from './hints'
 import { levelInfo } from './levels'
 import { deductionOrder, findSolutions } from './solver'
-import { pequals, pevalAt, tokenPoly, valueText } from './value'
-import { equals } from './fraction'
+import { constOf, pequals, pevalAt, tokenPoly, valueText } from './value'
+import { equals, lcm } from './fraction'
 import { equationCells, TEMPLATES, WIDE_TEMPLATES } from './templates'
 import type { PuzzleFile } from './types'
 
@@ -125,5 +126,31 @@ describe.each(file.puzzles.map((p) => [p.id, p] as const))('bane %s', (_id, puzz
     const target = findHintTarget(puzzle, {})
     expect(target).not.toBeNull()
     expect(explainSteps(puzzle, target!, level).length).toBeGreaterThan(0)
+  })
+})
+
+describe('sværhedsgrad', () => {
+  const levels = [...new Set(file.puzzles.map((p) => p.level))]
+
+  it.each(levels)('niveau %s: banerne står fra let til svær', (code) => {
+    const scores = file.puzzles.filter((p) => p.level === code).map((p) => difficulty(p).score)
+    expect(scores).toEqual([...scores].sort((a, b) => a - b))
+  })
+
+  it.each(levels)('niveau %s: formerId peger på hver af de gamle numre én gang', (code) => {
+    const puzzles = file.puzzles.filter((p) => p.level === code)
+    expect(new Set(puzzles.map((p) => p.formerId)).size).toBe(puzzles.length)
+    expect(puzzles.every((p) => p.formerId?.startsWith(`${code}-`))).toBe(true)
+  })
+
+  it('brøk 5: altid et sted at starte og fællesnævner højst 24', () => {
+    for (const p of file.puzzles.filter((q) => q.level === '5')) {
+      expect(difficulty(p).entry).toBeGreaterThanOrEqual(1)
+      const truth = solutionValues(p)
+      for (const eq of p.equations) {
+        const den = eq.nums.map((k) => constOf(truth.get(k)!).d).reduce((a, b) => lcm(a, b), 1)
+        expect(den).toBeLessThanOrEqual(24)
+      }
+    }
   })
 })

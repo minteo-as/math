@@ -17,6 +17,7 @@ import {
   frac,
   gcd,
   isInteger,
+  lcm,
   reduce,
   token,
   toNumber,
@@ -61,6 +62,8 @@ interface LevelGen {
    * gyldige tal i de ligninger, det låser fast. Uden denne prøves kun ét tal (som altid før).
    */
   lookahead?: number
+  /** Mindst så mange ligninger skal kunne regnes ud fra start (kun ét tomt felt). */
+  minEntry?: number
 }
 
 const noTraps = { negatives: false, reductionTraps: false, improperTraps: false }
@@ -195,11 +198,15 @@ const GENERATORS: Record<string, LevelGen> = {
       !(Math.abs(f.n) === 1 && f.d === 1) &&
       Math.abs(f.n) <= 30 &&
       Math.abs(toNumber(f)) <= 6,
+    // Der skal være et sted at starte – banen må ikke kun kunne løses ved at gætte med brikkerne.
+    minEntry: 1,
     puzzleOk: (eqs) => {
       const all = eqs.flatMap((e) => e.vals)
       const negatives = all.filter((v) => v.n < 0).length
       const ops = new Set(eqs.map((e) => e.op))
-      return negatives * 3 >= all.length && ops.size >= 3 && all.some((v) => !isInteger(v))
+      // Fællesnævneren i hver ligning højst 24 (før op til 60).
+      const commonDenOk = eqs.every((e) => e.vals.reduce((d, v) => lcm(d, v.d), 1) <= 24)
+      return negatives * 3 >= all.length && ops.size >= 3 && all.some((v) => !isInteger(v)) && commonDenOk
     },
   },
   P1: {
@@ -662,6 +669,11 @@ export function shuffleTiles(puzzle: Puzzle, rng: Rng) {
   puzzle.traps = puzzle.traps.map((t) => ({ ...t, tile: newIndex.get(t.tile)! }))
 }
 
+/** Antal ligninger, der kun mangler ét tal fra start. */
+function entryCount(puzzle: Puzzle): number {
+  return puzzle.equations.filter((e) => e.nums.filter((k) => k in puzzle.solutions[0]).length === 1).length
+}
+
 /** Laver én bane. Prøver igen og igen, indtil alle krav er opfyldt. */
 export function generatePuzzle(code: string, seed: number, templateName?: string): Puzzle {
   const gen = GENERATORS[code]
@@ -684,6 +696,7 @@ export function generatePuzzle(code: string, seed: number, templateName?: string
     if (!blanks) continue
     const puzzle = buildPuzzle(layout, ops, values, blanks, forms)
     if (findSolutions(puzzle, level, 2).length !== 1) continue
+    if (gen.minEntry && entryCount(puzzle) < gen.minEntry) continue
     addTraps(puzzle, gen, level, values, forms, rng, ctx)
     shuffleTiles(puzzle, rng)
     puzzle.level = code

@@ -169,6 +169,7 @@ src/engine/        Ren TypeScript – ingen Vue. Kan testes for sig.
   solver.ts        Løser: entydig løsning? kan den løses skridt for skridt?
   misconceptions.ts  Typiske fejl → fælde-brikker og forklaringer
   hints.ts         Hints og stjerneberegning
+  difficulty.ts    Sværhedsgrad pr. bane (bruges til at sortere banerne)
   generator.ts     Banegenerator (køres på forhånd via npm run generate)
   templates.ts     Layout-skabeloner (højst 7 kolonner af hensyn til mobil – 9 til hele tal)
 src/data/puzzles.json  De færdiglavede baner (20 pr. niveau)
@@ -187,5 +188,8 @@ Banerne laves af et script, og scriptet tjekker hver bane:
 - Der er præcis én løsning.
 - Undtagen på brøker 5 og hele tal 5 kan banen løses ved hele tiden at finde en ligning, hvor der kun mangler ét tal.
 - Ingen fælde-brik giver også en rigtig løsning.
+- På brøk 5 er der altid mindst én ligning at starte med, og fællesnævneren i hver ligning er højst 24.
+- Banerne i hvert niveau står fra let til svær (`src/engine/difficulty.ts`: startpunkter, runder, gæt og talstørrelse).
+  Stjerner gemt før sorteringen flyttes automatisk med over på samme bane (`formerId`, se `src/progress.ts`).
 
 Alt dette tjekkes igen i `src/engine/puzzles.test.ts`.
