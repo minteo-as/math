@@ -7,17 +7,40 @@
  */
 import { add, equals, frac, mul, reduce, tokenText, type Frac, type NumToken, type Op } from './fraction'
 
-/** Et udtryk i x med hele koefficienter: c[0] + c[1]·x + c[2]·x². */
+/**
+ * Et udtryk i x med hele koefficienter: c[0] + c[1]·x + c[2]·x².
+ * Ligninger kan også have udtrykket i en parentes med et tal foran (k: 2(x + 3))
+ * eller over en brøkstreg (d: x/3). Værdien er så k · udtrykket / d.
+ */
 export interface ExprToken {
   form: 'expr'
+  c: number[]
+  k?: number
+  d?: number
+}
+
+/**
+ * En operation, der gøres på begge sider af en ligning: "−5", ": 3", "+2x".
+ * `c` er tallet eller udtrykket, der regnes med (altid positivt – fortegnet ligger i op).
+ */
+export interface StepToken {
+  form: 'step'
+  op: '+' | '-' | '*' | ':'
   c: number[]
 }
 
 /** Det, der står på en brik eller i et felt. */
 export type Token = NumToken | ExprToken
 
-export function isExpr(t: Token): t is ExprToken {
+/** En brik i spillet: et tal, et udtryk eller (i ligninger) en operation. */
+export type Tile = Token | StepToken
+
+export function isExpr(t: Tile): t is ExprToken {
   return t.form === 'expr'
+}
+
+export function isStep(t: Tile): t is StepToken {
+  return t.form === 'step'
 }
 
 /** Koefficienter (index = potens af x), uden nuller til sidst. Nulpolynomiet er []. */
@@ -106,7 +129,9 @@ export function papply(op: Op, a: Poly, b: Poly): Poly | null {
 }
 
 export function tokenPoly(t: Token): Poly {
-  return isExpr(t) ? poly(t.c) : pconst(frac(t.n, t.d))
+  if (!isExpr(t)) return pconst(frac(t.n, t.d))
+  const base = poly(t.c)
+  return t.k === undefined && t.d === undefined ? base : pmul(base, pconst(frac(t.k ?? 1, t.d ?? 1)))
 }
 
 /** Hele koefficienter (eller null, hvis polynomiet har brøk-koefficienter). */
@@ -146,9 +171,26 @@ export function exprText(c: number[], compact = false): string {
     .join('')
 }
 
-/** Tekst for en brik, uanset om det er et tal eller et udtryk. */
-export function valueText(t: Token, compact = false): string {
-  return isExpr(t) ? exprText(t.c, compact) : tokenText(t)
+/** Et udtryk som tekst – også med parentes foran (2(x + 3)) eller som brøk (x/3, (x + 1)/2). */
+export function exprTokenText(t: ExprToken, compact = false): string {
+  const base = exprText(t.c, compact)
+  if (t.k !== undefined) return `${t.k}(${base})`
+  if (t.d !== undefined) return termCount(t.c) > 1 ? `(${base})/${t.d}` : `${base}/${t.d}`
+  return base
+}
+
+const STEP_SYMBOL: Record<StepToken['op'], string> = { '+': '+', '-': '−', '*': '·', ':': ':' }
+
+/** En operation som tekst: "−5", "+2x", "· 3", ": 3". */
+export function stepText(t: StepToken): string {
+  const operand = exprText(t.c, true)
+  return t.op === '+' || t.op === '-' ? `${STEP_SYMBOL[t.op]}${operand}` : `${STEP_SYMBOL[t.op]} ${operand}`
+}
+
+/** Tekst for en brik, uanset om det er et tal, et udtryk eller en operation. */
+export function valueText(t: Tile, compact = false): string {
+  if (isStep(t)) return stepText(t)
+  return isExpr(t) ? exprTokenText(t, compact) : tokenText(t)
 }
 
 /** a + b + c → hver term for sig: [koefficient, potens], højeste potens først. */
