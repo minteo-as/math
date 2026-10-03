@@ -104,7 +104,7 @@ function print() {
             :solved="false"
             :can-drop="false"
             :print-unit="90"
-            :print-height="620"
+            :print-height="520"
           />
         </div>
         <div class="tiles" aria-label="Brikker">
@@ -216,9 +216,13 @@ function print() {
     padding: 0;
     margin: 0;
   }
-  /* Én bane pr. side. */
+  /* Én bane pr. side. Sideskiftet står før hvert ark (ikke efter), så det sidste ark ikke
+     giver en tom ekstra side – det gør Safari og Firefox ved break-after på det sidste ark. */
   .sheet {
-    break-after: page;
+    break-inside: avoid;
+  }
+  .sheet + .sheet {
+    break-before: page;
   }
   .instruction {
     color: #333;

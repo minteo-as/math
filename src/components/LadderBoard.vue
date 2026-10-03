@@ -298,14 +298,14 @@ defineExpose({ focusCell, activeCell: () => active.value })
   }
   .side,
   .eq {
-    height: 92px;
+    height: 72px;
   }
   .step-row {
-    padding: 14px 0;
+    padding: 10px 0;
   }
   .step-row .cell {
     min-width: 150px;
-    height: 70px;
+    height: 56px;
     border-width: 2px;
   }
 }
