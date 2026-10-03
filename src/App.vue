@@ -37,7 +37,7 @@ watch(
   flex-direction: column;
   padding-top: 12px;
   padding-bottom: 12px;
-  background: var(--page-bg);
+  background: var(--screen-bg);
   overflow: hidden;
 }
 /* Fra hjemmeskærmen giver statuslinjen selv luft over knapperne. */
@@ -55,7 +55,7 @@ watch(
     position: fixed;
     inset: 0;
     overflow-y: auto;
-    background: var(--page-bg);
+    background: var(--screen-bg);
   }
   .screen:not(.fill)::before {
     content: '';
@@ -65,7 +65,7 @@ watch(
     z-index: 10;
     height: 12px;
     margin-bottom: -12px;
-    background: var(--page-bg);
+    background: var(--screen-bg);
   }
 }
 .version {
