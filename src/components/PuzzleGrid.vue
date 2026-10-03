@@ -15,6 +15,13 @@ const props = defineProps<{
   hintCell: CellKey | null
   solved: boolean
   canDrop: boolean
+  /**
+   * Til udskrift: højst så mange px pr. felt, så bredt som rammen tillader (rammen skal have
+   * container-type: inline-size) og så hele brættet højst er printHeight px højt.
+   * Uden printUnit bruges skærmens regler.
+   */
+  printUnit?: number
+  printHeight?: number
 }>()
 
 const emit = defineEmits<{
@@ -39,8 +46,11 @@ const gridStyle = computed(() => {
   // (100cqh er højden af brættets ramme, se GameView). Aldrig under MIN_UNIT; så scroller brættet.
   const byWidth = `calc((min(100vw, var(--page-max)) - 32px) / ${units})`
   const byHeight = `calc((100cqh - 4px) / ${rowUnits.toFixed(2)})`
+  const unit = props.printUnit
+    ? `min(${props.printUnit}px, calc(100cqw / ${units.toFixed(2)}), ${((props.printHeight ?? 10000) / rowUnits).toFixed(1)}px)`
+    : `min(64px, ${byWidth}, max(${MIN_UNIT}px, ${byHeight}))`
   return {
-    '--unit': `min(64px, ${byWidth}, max(${MIN_UNIT}px, ${byHeight}))`,
+    '--unit': unit,
     gridTemplateColumns: track(cols),
     gridTemplateRows: track(rows),
   }

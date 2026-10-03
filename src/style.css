@@ -36,9 +36,9 @@
   -webkit-text-size-adjust: 100%;
 }
 
-/* Mørk tilstand: følger telefonens/computerens indstilling. Samme farver i spillet –
+/* Mørk tilstand: følger telefonens/computerens indstilling (kun på skærm – udskrifter er lyse). Samme farver i spillet –
    gule felter, grønne brikker, blå knapper – bare i mørke udgaver. */
-@media (prefers-color-scheme: dark) {
+@media screen and (prefers-color-scheme: dark) {
   :root {
     --page-bg: #12161f;
     --surface: #1c2230;
@@ -141,4 +141,19 @@ a:focus-visible {
   font-size: 22px;
   text-decoration: none;
   box-shadow: 0 2px 6px rgb(0 0 0 / 0.06);
+}
+
+/* Udskrift (opgaveark): hvid baggrund og hele papirets bredde. */
+@page {
+  size: A4;
+  margin: 14mm;
+}
+@media print {
+  body {
+    background: #fff;
+  }
+  .app {
+    max-width: none;
+    padding: 0;
+  }
 }

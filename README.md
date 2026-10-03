@@ -5,6 +5,7 @@ Elevens stjerner gemmes kun i browserens `localStorage`.
 
 - Virker uden net, når siden har været åbnet én gang (service worker), og kan installeres som app på Android og føjes til hjemmeskærmen på iPhone.
 - Mørk tilstand følger enhedens indstilling.
+- Opgaveark: printer-knappen på en bane eller et niveau viser banerne klar til udskrift (én bane pr. side, felter til at skrive i, brikkerne som liste og facit til sidst).
 
 ## Kom i gang
 

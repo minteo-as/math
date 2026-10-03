@@ -2,11 +2,12 @@
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import FractionView from '../components/FractionView.vue'
+import PrintIcon from '../components/PrintIcon.vue'
 import PuzzleGrid from '../components/PuzzleGrid.vue'
 import StarRow from '../components/StarRow.vue'
 import TileBank from '../components/TileBank.vue'
 import { useGame } from '../composables/useGame'
-import { topicInfo } from '../engine/levels'
+import { ruleText as levelRuleText, topicInfo } from '../engine/levels'
 import { nextPuzzle, puzzleById } from '../puzzles'
 
 const props = defineProps<{ id: string }>()
@@ -18,19 +19,7 @@ const next = puzzle ? nextPuzzle(puzzle) : undefined
 
 const topic = game ? topicInfo(game.level.topic) : null
 
-const ruleText = computed(() => {
-  if (!game || !puzzle) return ''
-  const l = game.level
-  if (l.form === 'expr') return 'Udtrykkene på hver side af = skal være ens – for alle værdier af x.'
-  if (l.form === 'dec') {
-    const hasPercent = puzzle.equations.some((e) => e.op === 'af')
-    return hasPercent ? 'Procenter skrives med %, alle andre tal som decimaltal.' : ''
-  }
-  if (l.reduce === 'required') {
-    return l.form === 'mixed' ? 'Svar skal være forkortede og skrevet som blandede tal.' : 'Svar skal være forkortede.'
-  }
-  return ''
-})
+const ruleText = computed(() => (game && puzzle ? levelRuleText(game.level, puzzle) : ''))
 
 // ---------- Brættet scroller, resten står fast ----------
 
@@ -196,6 +185,14 @@ function goNext() {
         <strong>Niveau {{ game.level.number }} · Bane {{ puzzle.index }}</strong>
         <span>{{ topic?.title }}: {{ game.level.title }}</span>
       </div>
+      <RouterLink
+        class="icon-btn"
+        :to="{ name: 'print', params: { target: puzzle.id } }"
+        aria-label="Udskriv som opgaveark"
+        title="Udskriv som opgaveark"
+      >
+        <PrintIcon />
+      </RouterLink>
       <button type="button" class="icon-btn" aria-label="Start forfra" title="Start forfra" @click="game.restart()">↻</button>
     </header>
 
