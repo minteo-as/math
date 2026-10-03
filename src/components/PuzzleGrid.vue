@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { OP_SYMBOL } from '../engine/fraction'
 import { levelInfo } from '../engine/levels'
 import type { Board } from '../engine/evaluate'
 import { cellKey, type CellKey, type Puzzle } from '../engine/types'
 import FractionView from './FractionView.vue'
+import { moveFocus } from '../keyboardNav'
 
 const props = defineProps<{
   puzzle: Puzzle
@@ -25,9 +26,41 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  tapCell: [cell: CellKey]
+  /** `keyboard`: trykket kom fra tastaturet (Enter/mellemrum), ikke fra mus eller finger. */
+  tapCell: [cell: CellKey, keyboard: boolean]
   dragStart: [event: PointerEvent, tile: number]
 }>()
+
+// ---------- Tastatur ----------
+// Brættet er ét stop med Tab; piletasterne flytter rundt mellem felterne ("roving tabindex").
+
+const gridEl = ref<HTMLElement | null>(null)
+const active = ref<CellKey | null>(null)
+
+const blankKeys = computed(() =>
+  props.puzzle.cells.filter((c) => c.kind === 'blank').map((c) => cellKey(c.r, c.c)),
+)
+/** Det felt, Tab lander på. */
+const tabCell = computed(() =>
+  active.value && blankKeys.value.includes(active.value) ? active.value : blankKeys.value[0],
+)
+
+function cellButtons(): HTMLElement[] {
+  return [...(gridEl.value?.querySelectorAll<HTMLElement>('button[data-cell]') ?? [])]
+}
+
+function onKeydown(event: KeyboardEvent) {
+  moveFocus(event, cellButtons())
+}
+
+/** Flyt fokus til et felt (bruges, når man har valgt en brik med tastaturet). */
+function focusCell(key: CellKey) {
+  cellButtons()
+    .find((el) => el.dataset.cell === key)
+    ?.focus()
+}
+
+defineExpose({ focusCell, activeCell: () => active.value })
 
 /**
  * Tal står altid i lige rækker/kolonner, regnetegn og = i ulige.
@@ -102,7 +135,7 @@ const cells = computed(() =>
 </script>
 
 <template>
-  <div class="grid" :style="gridStyle">
+  <div ref="gridEl" class="grid" :style="gridStyle">
     <template v-for="c in cells" :key="c.key">
       <button
         v-if="c.cell.kind === 'blank'"
@@ -111,8 +144,11 @@ const cells = computed(() =>
         :class="c.classes"
         :style="c.style"
         :data-cell="c.key"
+        :tabindex="c.key === tabCell ? 0 : -1"
         :aria-label="c.tile === null ? 'Tomt felt' : 'Felt med brik – tryk for at fjerne'"
-        @click="emit('tapCell', c.key)"
+        @click="emit('tapCell', c.key, $event.detail === 0)"
+        @focus="active = c.key"
+        @keydown="onKeydown"
         @pointerdown="c.tile !== null && !c.classes.locked && emit('dragStart', $event, c.tile)"
       >
         <FractionView

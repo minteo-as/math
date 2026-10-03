@@ -155,12 +155,51 @@ function startDrag(event: PointerEvent, tile: number) {
 
 onBeforeUnmount(() => cleanup?.())
 
-function tapTile(tile: number) {
-  if (!suppressClick) game?.tapTile(tile)
+// ---------- Tastatur ----------
+// Vælg en brik med Enter → fokus hopper til et tomt felt. Læg den med Enter → fokus tilbage
+// til bunken (eller til Tjek, når alle felter er udfyldt). Piletaster flytter rundt.
+
+const gridRef = ref<InstanceType<typeof PuzzleGrid> | null>(null)
+const bankRef = ref<InstanceType<typeof TileBank> | null>(null)
+const checkButton = ref<HTMLButtonElement | null>(null)
+
+/** Det felt, fokus skal hen til: det seneste felt, hvis det er tomt – ellers det første tomme. */
+function nextEmptyCell(): string | undefined {
+  if (!game) return undefined
+  const last = gridRef.value?.activeCell()
+  if (last && game.board[last] === null && !game.locked.has(last)) return last
+  return Object.keys(game.board).find((k) => game.board[k] === null && !game.locked.has(k)) ?? last ?? undefined
 }
-function tapCell(cell: string) {
-  if (!suppressClick) game?.tapCell(cell)
+
+function tapTile(tile: number, keyboard = false) {
+  if (!game || suppressClick) return
+  game.tapTile(tile)
+  if (keyboard && game.selected.value === tile) {
+    const cell = nextEmptyCell()
+    if (cell) nextTick(() => gridRef.value?.focusCell(cell))
+  }
 }
+
+function tapCell(cell: string, keyboard = false) {
+  if (!game || suppressClick) return
+  const placing = game.selected.value !== null
+  game.tapCell(cell)
+  if (!keyboard || !placing) return
+  nextTick(() => {
+    if (game.complete.value) checkButton.value?.focus()
+    else bankRef.value?.focusTile()
+  })
+}
+
+/** Escape fortryder en valgt brik og sætter fokus tilbage på den. */
+function onKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || !game || helpOpen.value || game.selected.value === null) return
+  const tile = game.selected.value
+  game.selected.value = null
+  bankRef.value?.focusTile(tile)
+}
+window.addEventListener('keydown', onKeydown)
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 function tapBank() {
   if (!game || suppressClick) return
   game.selected.value = null
@@ -200,6 +239,7 @@ function goNext() {
 
     <div ref="boardWrap" class="board-wrap">
       <PuzzleGrid
+        ref="gridRef"
         :puzzle="puzzle"
         :board="game.board"
         :locked="game.locked"
@@ -238,6 +278,7 @@ function goNext() {
 
       <div class="dock">
         <TileBank
+          ref="bankRef"
           class="dock-bank"
           :tiles="puzzle.tiles"
           :bank="game.bank.value"
@@ -253,6 +294,7 @@ function goNext() {
             <StarRow :stars="game.potentialStars.value" />
           </div>
           <button
+            ref="checkButton"
             type="button"
             class="primary check"
             :disabled="!game.complete.value || game.solved.value"
