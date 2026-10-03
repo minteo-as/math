@@ -1,7 +1,10 @@
 # Matkryds
 
-Et krydsregne-spil med brøker, decimaltal, procent og algebra til 9. klasse. Kører i browseren (Vue 3), uden backend og uden login.
+Et krydsregne-spil med hele tal, brøker, decimaltal, procent og algebra til 9. klasse. Kører i browseren (Vue 3), uden backend og uden login.
 Elevens stjerner gemmes kun i browserens `localStorage`.
+
+- Virker uden net, når siden har været åbnet én gang (service worker), og kan installeres som app på Android og føjes til hjemmeskærmen på iPhone.
+- Mørk tilstand følger enhedens indstilling.
 
 ## Kom i gang
 
@@ -172,6 +175,8 @@ src/data/puzzles.json  De færdiglavede baner (20 pr. niveau)
 src/composables/useGame.ts  Spillets tilstand i brugerfladen
 src/components/, src/views/  Vue-komponenter
 design/ikon.svg     Ikonet (kilde). PNG'erne laves med: node design/render-icons.mjs
+scripts/service-worker.ts  Laver dist/sw.js ved build, så spillet virker uden net og kan
+                       installeres som app (sammen med public/manifest.webmanifest)
 public/favicon.svg  Forenklet ikon til browserfanen (uden tal)
 ```
 

@@ -7,11 +7,18 @@
 #
 # Filerne i assets/ har et hash i navnet (fx index-BqaRT-9M.js), som skifter ved hver build.
 # De må derfor caches i et år uden at blive tjekket igen.
+#
+# sw.js (service worker, så spillet virker uden net) skal også altid tjekkes,
+# ellers opdager browserne ikke en ny version.
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
 <IfModule mod_headers.c>
-  <Files "index.html">
+  <FilesMatch "^(index\.html|sw\.js|manifest\.webmanifest)$">
     Header set Cache-Control "no-cache"
     Header unset Expires
-  </Files>
+  </FilesMatch>
 
   <FilesMatch "-[A-Za-z0-9_-]{8}\.(js|css)$">
     Header set Cache-Control "public, max-age=31536000, immutable"

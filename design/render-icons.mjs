@@ -13,11 +13,25 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const icon = readFileSync(`${root}design/ikon.svg`, 'utf8')
 const favicon = readFileSync(`${root}public/favicon.svg`, 'utf8')
 
+/**
+ * Android beskærer "maskable" ikoner til en cirkel eller en anden form. Alt vigtigt skal
+ * derfor ligge inden for den midterste cirkel (radius 40 %): baggrunden fylder det hele,
+ * og resten skaleres ned omkring midten.
+ */
+function maskable(svg, scale = 0.72) {
+  const [, open, background, rest] = /^(<svg[^>]*>)\s*(<rect[^>]*\/>)([\s\S]*)<\/svg>\s*$/.exec(svg)
+  return `${open}${background}<g transform="translate(256 256) scale(${scale}) translate(-256 -256)">${rest}</g></svg>`
+}
+
 const targets = [
   // Hjemmeskærm på iPhone (iOS runder selv hjørnerne – billedet skal være helt firkantet).
   { svg: icon, size: 180, out: 'public/apple-touch-icon.png' },
   // Ikonet på forsiden (vises i 76 px, her i 3x til skarpe skærme).
   { svg: icon, size: 228, out: 'src/assets/logo.png' },
+  // Installeret app på Android/Chrome (manifest.webmanifest).
+  { svg: icon, size: 192, out: 'public/icon-192.png' },
+  { svg: icon, size: 512, out: 'public/icon-512.png' },
+  { svg: maskable(icon), size: 512, out: 'public/icon-maskable-512.png' },
   // Browserfanen i browsere, der ikke kan vise SVG-ikoner.
   { svg: favicon, size: 32, out: 'public/favicon-32.png', transparent: true },
 ]
