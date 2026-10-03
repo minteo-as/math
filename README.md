@@ -16,13 +16,14 @@ npm run dev        # udviklingsserver
 npm test           # tests af motoren og af alle baner
 npm run build      # statiske filer i dist/ – kan lægges på enhver webserver
 npm run generate   # lav banerne igen (src/data/puzzles.json)
+npm run format     # formatér koden med Prettier (CI tjekker med npm run format:check)
 ```
 
 ## CI
 
 `.github/workflows/ci.yml` kører ved hvert push til `main` og ved hver pull request. Den:
 
-- installerer, typetjekker og kører tests,
+- installerer, tjekker formateringen (Prettier), typetjekker og kører tests,
 - tjekker, at `src/data/puzzles.json` passer til generatoren,
 - bygger og gemmer `dist/` som en zip (under *Artifacts* på workflow-kørslen, gemmes i 30 dage).
 

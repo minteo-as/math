@@ -1,0 +1,4 @@
+# Genereres af npm run generate – CI tjekker, at filen er præcis det, generatoren skriver.
+src/data/puzzles.json
+package-lock.json
+dist
