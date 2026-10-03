@@ -69,6 +69,23 @@ function closeHelp() {
   nextTick(() => helpButton.value?.focus())
 }
 
+// ---------- Nedtoning bag hjælpemenuen og "Flot klaret!" ----------
+// Safari på iPhone farver statuslinjen med baggrunden på spillesidens faste element og
+// ser bort fra et halvgennemsigtigt gråt lag ovenpå. Derfor tones siden ned ved at gøre
+// baggrunden mørkere (klassen på <html> bruges i style.css) og indholdet mørkere med
+// brightness(). Det ser ud som et sort lag med 18 % (35 %) dækning – og statuslinjen følger med.
+const dim = computed(() => (game?.solved.value ? 'done' : helpOpen.value ? 'help' : null))
+watch(
+  dim,
+  (now) => {
+    const html = document.documentElement.classList
+    html.toggle('dim-help', now === 'help')
+    html.toggle('dim-done', now === 'done')
+  },
+  { immediate: true },
+)
+onBeforeUnmount(() => document.documentElement.classList.remove('dim-help', 'dim-done'))
+
 /** Vælg et hint og luk menuen. */
 function useHint(hint: () => void) {
   hint()
@@ -221,7 +238,7 @@ function goNext() {
     <RouterLink to="/">Til forsiden</RouterLink>
   </div>
 
-  <div v-else class="page game" :class="{ 'many-tiles': game.tiles.length > 9 }">
+  <div v-else class="page game" :class="[{ 'many-tiles': game.tiles.length > 9 }, dim && `dim-${dim}`]">
     <header class="topbar">
       <RouterLink class="icon-btn" :to="{ name: 'level', params: { level: puzzle.level } }" aria-label="Tilbage"
         >←</RouterLink
@@ -522,7 +539,6 @@ function goNext() {
   align-items: flex-end;
   justify-content: center;
   padding: 16px;
-  background: rgb(0 0 0 / 0.18);
   z-index: 15;
 }
 .help-menu {
@@ -568,8 +584,14 @@ function goNext() {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgb(0 0 0 / 0.35);
   z-index: 20;
+}
+/* Nedtoningen (se dim i scriptet): brightness(0.82) er det samme som et sort lag med 18 % dækning. */
+.dim-help > :not(.help-backdrop) {
+  filter: brightness(0.82);
+}
+.dim-done > :not(.overlay) {
+  filter: brightness(0.65);
 }
 .dialog {
   width: min(360px, 100%);
