@@ -71,9 +71,36 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
           </p>
         </li>
         <li>
-          <!-- Del-menuen -->
+          <!-- Nederst i Del-menuen: en række runde knapper, sidst "Se mere" -->
+          <div class="mock actions" aria-hidden="true">
+            <span class="action">
+              <span class="round">
+                <svg viewBox="0 0 24 24">
+                  <rect x="8" y="8" width="11" height="12" rx="2" />
+                  <path d="M5 15V6a2 2 0 0 1 2-2h7" />
+                </svg>
+              </span>
+              Kopier
+            </span>
+            <span class="action">
+              <span class="round"
+                ><svg viewBox="0 0 24 24"><path d="M7 4h10v16l-5-4-5 4z" /></svg
+              ></span>
+              Bogmærker
+            </span>
+            <span class="action hot">
+              <span class="round"
+                ><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></svg
+              ></span>
+              Se mere
+            </span>
+          </div>
+          <p>Rul ned i menuen, og tryk på <strong>Se mere</strong> nederst.</p>
+        </li>
+        <li>
+          <!-- Listen under "Se mere" (de andre punkter er vist som grå streger) -->
           <div class="mock menu" aria-hidden="true">
-            <span class="row">Kopiér</span>
+            <span class="row"><span class="blank"></span></span>
             <span class="row hot">
               Føj til hjemmeskærm
               <svg viewBox="0 0 24 24">
@@ -81,9 +108,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
                 <path d="M12 8v8M8 12h8" />
               </svg>
             </span>
-            <span class="row">Føj bogmærke til</span>
+            <span class="row"><span class="blank short"></span></span>
           </div>
-          <p>Rul ned i menuen, og vælg <strong>Føj til hjemmeskærm</strong>.</p>
+          <p>Vælg <strong>Føj til hjemmeskærm</strong> i listen.</p>
         </li>
         <li>
           <!-- Skærmen "Føj til hjemmeskærm" -->
@@ -279,6 +306,46 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 }
 .row + .row {
   border-top: 1px solid var(--line);
+}
+.blank {
+  width: 60%;
+  height: 10px;
+  margin: 4px 0;
+  border-radius: 5px;
+  background: var(--line);
+}
+.blank.short {
+  width: 40%;
+}
+.actions {
+  justify-content: space-around;
+  padding: 10px 6px 8px;
+}
+.action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.round {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--page-bg);
+  border: 1px solid var(--line);
+}
+.action.hot {
+  color: var(--ink);
+  font-weight: 600;
+}
+.action.hot .round {
+  color: #fff;
+  background: var(--ios-blue);
+  border-color: var(--ios-blue);
 }
 .row.hot {
   color: #fff;
