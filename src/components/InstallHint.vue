@@ -71,23 +71,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
           </p>
         </li>
         <li>
-          <!-- Nederst i Del-menuen: en række runde knapper, sidst "Se mere" -->
+          <!-- Nederst i Del-menuen: runde knapper, sidst "Se mere". De andre knapper kan
+               brugeren selv vælge, så de er tegnet uden ikon og tekst. -->
           <div class="mock actions" aria-hidden="true">
-            <span class="action">
-              <span class="round">
-                <svg viewBox="0 0 24 24">
-                  <rect x="8" y="8" width="11" height="12" rx="2" />
-                  <path d="M5 15V6a2 2 0 0 1 2-2h7" />
-                </svg>
-              </span>
-              Kopier
-            </span>
-            <span class="action">
-              <span class="round"
-                ><svg viewBox="0 0 24 24"><path d="M7 4h10v16l-5-4-5 4z" /></svg
-              ></span>
-              Bogmærker
-            </span>
+            <span class="action"><span class="round"></span><span class="blank"></span></span>
+            <span class="action"><span class="round"></span><span class="blank"></span></span>
             <span class="action hot">
               <span class="round"
                 ><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></svg
@@ -101,10 +89,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
           </p>
         </li>
         <li>
-          <!-- Listen i Del-menuen (som på iOS 27) -->
+          <!-- Listen i Del-menuen. Brugeren kan selv ændre punkterne, så kun det rigtige har tekst. -->
           <div class="mock menu" aria-hidden="true">
-            <span class="row">Føj til hurtignote</span>
-            <span class="row">Find på side</span>
+            <span class="row"><span class="blank"></span></span>
             <span class="row hot">
               Føj til hjemmeskærm
               <svg viewBox="0 0 24 24">
@@ -112,6 +99,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
                 <path d="M12 8v8M8 12h8" />
               </svg>
             </span>
+            <span class="row"><span class="blank short"></span></span>
           </div>
           <p>Vælg <strong>Føj til hjemmeskærm</strong>.</p>
         </li>
@@ -309,6 +297,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 }
 .row + .row {
   border-top: 1px solid var(--line);
+}
+/* Grå streg i stedet for tekst på punkter, der kan være forskellige fra telefon til telefon. */
+.blank {
+  display: block;
+  width: 60%;
+  height: 10px;
+  margin: 4px 0;
+  border-radius: 5px;
+  background: var(--line);
+}
+.blank.short {
+  width: 40%;
+}
+.action .blank {
+  width: 52px;
+  margin: 3px 0;
 }
 .actions {
   justify-content: space-around;
