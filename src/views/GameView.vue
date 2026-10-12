@@ -10,6 +10,7 @@ import TileBank from '../components/TileBank.vue'
 import { useGame } from '../composables/useGame'
 import { ruleText as levelRuleText, topicInfo } from '../engine/levels'
 import { isLadder, nextPuzzle, puzzleById } from '../puzzles'
+import { keepScreenAwake } from '../wakeLock'
 
 const props = defineProps<{ id: string }>()
 const router = useRouter()
@@ -220,6 +221,9 @@ function onKeydown(event: KeyboardEvent) {
 }
 window.addEventListener('keydown', onKeydown)
 onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+
+// Telefonen må ikke dæmpe lyset og sove, mens eleven tænker (se wakeLock.ts).
+onBeforeUnmount(keepScreenAwake())
 function tapBank() {
   if (!game || suppressClick) return
   game.selected.value = null

@@ -4,6 +4,7 @@ Et krydsregne-spil med hele tal, brøker, decimaltal, procent og algebra til 9. 
 Elevens stjerner gemmes kun i browserens `localStorage`.
 
 - Virker uden net, når siden har været åbnet én gang (service worker), og kan installeres som app på Android og føjes til hjemmeskærmen på iPhone.
+- Skærmen holdes tændt, mens man spiller (Screen Wake Lock, `src/wakeLock.ts`): kun på spillesiden og kun indtil 5 minutter efter sidste tryk, så telefonen stadig kan slukke, hvis den bliver lagt fra sig.
 - Spiller man i browseren på iPhone, iPad eller Android, foreslår forsiden at lægge spillet på hjemmeskærmen (`src/components/InstallHint.vue`, `src/installHint.ts`). iOS har ingen funktion, som et script kan bruge til at installere siden, så der vises en vejledning trin for trin. På Android åbner knappen "Installér" browserens egen installationsdialog, når browseren tilbyder det (`beforeinstallprompt` i Chrome og Samsung Internet) – ellers vises en vejledning. "Ikke nu" huskes i 30 dage.
 - Mørk tilstand følger enhedens indstilling.
 - Kan spilles med tastatur alene: Tab til brættet eller bunken, piletaster mellem felter og brikker, Enter for at vælge og lægge, Escape for at fortryde et valg.
